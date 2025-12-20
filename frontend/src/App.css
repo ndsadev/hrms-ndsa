@@ -1,0 +1,29 @@
+.desktop {
+  display: none;
+}
+
+.mobile {
+  display: none;
+}
+
+@media screen and (min-device-width: 601px) {
+  .desktop {
+    display: block;
+  }
+}
+
+@media screen and (max-device-width: 600px) {
+  .mobile {
+    display: block;
+  }
+  .form-card {
+    padding: 21px !important;
+}
+}
+
+.green-color{
+    color: #70a664;
+}
+.blue-color{
+    color: #06406e;
+}

@@ -19,11 +19,11 @@ import {
   FaEyeSlash,
 } from "react-icons/fa";
 
-// 🔹 API
+// API
 import api from "../api/axiosInstance";
 import SummaryApi from "../common";
 
-// 🔹 TOAST
+// TOAST
 import { toast } from "react-toastify";
 
 const CreateUsers = () => {
@@ -41,7 +41,7 @@ const CreateUsers = () => {
   const [showConfirm, setShowConfirm] = useState(false);
   const [errors, setErrors] = useState({});
 
-  // 🔥 BUTTON LOADING STATE
+  // BUTTON LOADING STATE
   const [loading, setLoading] = useState(false);
 
   const validate = (values = form) => {
@@ -82,7 +82,7 @@ const CreateUsers = () => {
     setForm((s) => ({ ...s, [name]: value }));
   };
 
-  // 🔥 CREATE USER
+  // CREATE USER
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -152,7 +152,7 @@ const CreateUsers = () => {
           font-weight: 600;
         }
 
-        /* 🔥 REMOVE BLUE FOCUS BORDER (BOOTSTRAP + BROWSER) */
+        /* REMOVE BLUE FOCUS BORDER (BOOTSTRAP + BROWSER) */
 .form-control:focus,
 .form-control:focus-visible {
   outline: none !important;

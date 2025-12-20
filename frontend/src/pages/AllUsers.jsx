@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   FaUsers,
   FaEdit,
@@ -10,6 +10,8 @@ import { Container } from "react-bootstrap";
 import { toast } from "react-toastify";
 import Loader from "../components/Loader";
 import useAllUsers from "../hooks/useAllUsers";
+
+const ITEMS_PER_PAGE = 8;
 
 const AllUsers = () => {
   const {
@@ -27,32 +29,66 @@ const AllUsers = () => {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("ALL");
   const [sortOrder, setSortOrder] = useState("FIRST");
+  const [currentPage, setCurrentPage] = useState(1);
 
-  const filteredUsers = users
-    .filter((u) => {
-      const matchSearch =
-        u.name?.toLowerCase().includes(search.toLowerCase()) ||
-        u.email?.toLowerCase().includes(search.toLowerCase());
+  /* ===========================
+     FILTER + SORT
+  ============================ */
+  const filteredUsers = useMemo(() => {
+    return users
+      .filter((u) => {
+        const matchSearch =
+          u.name?.toLowerCase().includes(search.toLowerCase()) ||
+          u.email?.toLowerCase().includes(search.toLowerCase());
 
-      const matchRole = roleFilter === "ALL" || u.role === roleFilter;
-      return matchSearch && matchRole;
-    })
-    .sort((a, b) =>
-      sortOrder === "FIRST"
-        ? new Date(a.createdAt) - new Date(b.createdAt)
-        : new Date(b.createdAt) - new Date(a.createdAt)
-    );
+        const matchRole =
+          roleFilter === "ALL" || u.role === roleFilter;
 
-  const handleUpdate = async () => {
-    const res = await updateUser();
+        return matchSearch && matchRole;
+      })
+      .sort((a, b) =>
+        sortOrder === "FIRST"
+          ? new Date(a.createdAt) - new Date(b.createdAt)
+          : new Date(b.createdAt) - new Date(a.createdAt)
+      );
+  }, [users, search, roleFilter, sortOrder]);
 
-    if (res.success) {
-      toast.success("User updated successfully");
-    } else {
-      toast.error(res.message);
-    }
+  /* ===========================
+     PAGINATION
+  ============================ */
+  const totalPages = Math.ceil(filteredUsers.length / ITEMS_PER_PAGE);
+
+  const paginatedUsers = filteredUsers.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
+  const handlePageChange = (page) => {
+    if (page < 1 || page > totalPages) return;
+    setCurrentPage(page);
   };
 
+  /* Reset page on filter/search change */
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [search, roleFilter, sortOrder]);
+
+  const formatDate = (date) =>
+    new Date(date).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "2-digit",
+    });
+
+  /* ===========================
+     UPDATE / DELETE
+  ============================ */
+  const handleUpdate = async () => {
+    const res = await updateUser();
+    res.success
+      ? toast.success("User updated successfully")
+      : toast.error(res.message);
+  };
 
   const handleDelete = (userId) => {
     toast.warn(
@@ -67,17 +103,13 @@ const AllUsers = () => {
               onClick={async () => {
                 closeToast();
                 const res = await deleteUser(userId);
-
-                if (res.success) {
-                  toast.success("User deleted successfully");
-                } else {
-                  toast.error(res.message);
-                }
+                res.success
+                  ? toast.success("User deleted successfully")
+                  : toast.error(res.message);
               }}
             >
               Delete
             </button>
-
             <button
               className="btn btn-secondary btn-sm"
               onClick={closeToast}
@@ -90,7 +122,6 @@ const AllUsers = () => {
       { autoClose: false }
     );
   };
-
 
   return (
     <>
@@ -217,7 +248,7 @@ const AllUsers = () => {
 
         .users-table th,
         .users-table td {
-          padding: 10px 14px;
+          padding: 8px 14px;
           text-align: center;
           border-bottom: 1px solid #e5e5e5;
         }
@@ -401,6 +432,7 @@ const AllUsers = () => {
             <thead>
               <tr>
                 <th>Sr.</th>
+                <th>Emp ID</th>
                 <th>Name</th>
                 <th>Email</th>
                 <th>Designation</th>
@@ -411,23 +443,22 @@ const AllUsers = () => {
             </thead>
 
             <tbody>
-              {!loading && filteredUsers.length === 0 ? (
+              {!loading && paginatedUsers.length === 0 ? (
                 <tr>
-                  <td colSpan="7" style={{ padding: 20 }}>
+                  <td colSpan="8" style={{ padding: 20 }}>
                     No users found
                   </td>
                 </tr>
               ) : (
-                filteredUsers.map((u, i) => (
+                paginatedUsers.map((u, i) => (
                   <tr key={u._id}>
-                    <td>{i + 1}</td>
+                    <td>{(currentPage - 1) * ITEMS_PER_PAGE + i + 1}</td>
+                    <td>{u.employeeId || "-"}</td>
                     <td>{u.name}</td>
                     <td>{u.email}</td>
                     <td>{u.designation}</td>
                     <td>{u.role}</td>
-                    <td>
-                      {new Date(u.createdAt).toLocaleDateString()}
-                    </td>
+                    <td>{formatDate(u.createdAt)}</td>
                     <td>
                       <button
                         className="action-btn edit-btn"
@@ -441,16 +472,50 @@ const AllUsers = () => {
                       >
                         <FaTrash />
                       </button>
-
                     </td>
                   </tr>
+
                 ))
               )}
             </tbody>
           </table>
         </div>
 
-        {/* EDIT MODAL */}
+        {/* PAGINATION */}
+        {totalPages > 1 && (
+          <div className="pagination-wrap">
+            <div className="pagination">
+              <button
+                className="nav-btn"
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+              >
+                Prev
+              </button>
+
+              {Array.from({ length: totalPages }).map((_, i) => (
+                <button
+                  key={i}
+                  className={`page-btn ${currentPage === i + 1 ? "active" : ""
+                    }`}
+                  onClick={() => handlePageChange(i + 1)}
+                >
+                  {i + 1}
+                </button>
+              ))}
+
+              <button
+                className="nav-btn"
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* EDIT MODAL (UNCHANGED) */}
         {showModal && (
           <div className="modal-backdrop" onClick={closeModal}>
             <div className="modal-box" onClick={(e) => e.stopPropagation()}>

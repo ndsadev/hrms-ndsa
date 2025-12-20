@@ -42,46 +42,46 @@ const Sidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) => {
   const navigate = useNavigate();
   const { logout } = useLogout();
 
-const handleLogout = () => {
-  toast.warn(
-    ({ closeToast }) => (
-      <div>
-        <p style={{ marginBottom: 10 }}>
-          Are you sure you want to logout?
-        </p>
+  const handleLogout = () => {
+    toast.warn(
+      ({ closeToast }) => (
+        <div>
+          <p style={{ marginBottom: 10 }}>
+            Are you sure you want to logout?
+          </p>
 
-        <div style={{ display: "flex", gap: 10 }}>
-          <button
-            className="btn btn-danger btn-sm"
-            onClick={async () => {
-              closeToast();
+          <div style={{ display: "flex", gap: 10 }}>
+            <button
+              className="btn btn-danger btn-sm"
+              onClick={async () => {
+                closeToast();
 
-              const res = await logout();
+                const res = await logout();
 
-              if (res?.success) {
-                // 🔥 ONLY NAVIGATE WITH STATE
-                navigate("/", {
-                  replace: true,
-                  state: { fromLogout: true },
-                });
-              }
-            }}
-          >
-            Logout
-          </button>
+                if (res?.success) {
+                  // ONLY NAVIGATE WITH STATE
+                  navigate("/", {
+                    replace: true,
+                    state: { fromLogout: true },
+                  });
+                }
+              }}
+            >
+              Logout
+            </button>
 
-          <button
-            className="btn btn-secondary btn-sm"
-            onClick={closeToast}
-          >
-            Cancel
-          </button>
+            <button
+              className="btn btn-secondary btn-sm"
+              onClick={closeToast}
+            >
+              Cancel
+            </button>
+          </div>
         </div>
-      </div>
-    ),
-    { autoClose: false }
-  );
-};
+      ),
+      { autoClose: false }
+    );
+  };
 
 
   // Logged-in user

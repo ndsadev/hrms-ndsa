@@ -37,8 +37,15 @@ const userSchema = new mongoose.Schema(
     },
 
     refreshToken: { type: String },
+
+    preboardingCompleted: {
+      type: Boolean,
+      default: false,
+    },
+
   },
   { timestamps: true }
+
 );
 
 module.exports = mongoose.model("User", userSchema);

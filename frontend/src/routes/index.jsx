@@ -8,6 +8,7 @@ import Profile from "../pages/PreboardingStage.jsx";
 import Onboarding from "../pages/Onboarding.jsx";
 import Assets from "../pages/Assets.jsx";
 import AssetsList from "../pages/AssetsList.jsx";
+import EmployeeList from "../pages/EmployeeList.jsx";
 import ProtectedRoute from "./ProtectedRoute";
 
 const router = createBrowserRouter([
@@ -20,7 +21,7 @@ const router = createBrowserRouter([
         element: <Login />,
       },
 
-      // 🔐 PROTECTED DASHBOARD
+      // DASHBOARD (LOGIN REQUIRED)
       {
         path: "dashboard",
         element: (
@@ -29,29 +30,66 @@ const router = createBrowserRouter([
           </ProtectedRoute>
         ),
         children: [
+          // SUPER ADMIN ONLY
           {
             path: "create-users",
-            element: <CreateUsers />,
+            element: (
+              <ProtectedRoute allowedRoles={["SUPER_ADMIN"]}>
+                <CreateUsers />
+              </ProtectedRoute>
+            ),
           },
           {
             path: "all-users",
-            element: <AllUsers />,
+            element: (
+              <ProtectedRoute allowedRoles={["SUPER_ADMIN"]}>
+                <AllUsers />
+              </ProtectedRoute>
+            ),
+          },
+
+          // HR
+          {
+            path: "employee-list",
+            element: (
+              <ProtectedRoute allowedRoles={["HR"]}>
+                <EmployeeList />
+              </ProtectedRoute>
+            ),
           },
           {
             path: "preboarding-stage",
-            element: <Profile />,
+            element: (
+              <ProtectedRoute allowedRoles={["HR"]}>
+                <Profile />
+              </ProtectedRoute>
+            ),
           },
           {
             path: "onboarding",
-            element: <Onboarding />,
+            element: (
+              <ProtectedRoute allowedRoles={["HR"]}>
+                <Onboarding />
+              </ProtectedRoute>
+            ),
           },
+
+          // ADMIN ONLY
           {
             path: "assets",
-            element: <Assets />,
+            element: (
+              <ProtectedRoute allowedRoles={["ADMIN"]}>
+                <Assets />
+              </ProtectedRoute>
+            ),
           },
           {
             path: "assets-list",
-            element: <AssetsList />,
+            element: (
+              <ProtectedRoute allowedRoles={["ADMIN"]}>
+                <AssetsList />
+              </ProtectedRoute>
+            ),
           },
         ],
       },

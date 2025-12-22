@@ -2,11 +2,9 @@ import { useEffect } from "react";
 import { Outlet } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { ToastContainer } from "react-toastify";
-
 import api from "./api/axiosInstance";
 import SummaryApi from "./common";
 import { setUserDetails, clearUser } from "./store/userSlice";
-
 import "react-toastify/dist/ReactToastify.css";
 import "./App.css";
 
@@ -15,8 +13,14 @@ function App() {
 
   useEffect(() => {
     const accessToken = localStorage.getItem("accessToken");
-    if (!accessToken) return;
 
+    // No token → auth check finished
+    if (!accessToken) {
+      dispatch(clearUser());
+      return;
+    }
+
+    // Refresh ke baad user reload
     const fetchUserDetails = async () => {
       try {
         const res = await api({
@@ -24,7 +28,11 @@ function App() {
           method: SummaryApi.getUserDetails.method,
         });
 
-        dispatch(setUserDetails(res.data.user));
+        if (res.data?.success) {
+          dispatch(setUserDetails(res.data.user));
+        } else {
+          dispatch(clearUser());
+        }
       } catch {
         dispatch(clearUser());
         localStorage.removeItem("accessToken");
@@ -41,7 +49,7 @@ function App() {
         <Outlet />
       </div>
 
-      {/* 🔥 STABLE TOAST CONTAINER */}
+      {/*STABLE TOAST CONTAINER */}
       <ToastContainer
         position="top-right"
         autoClose={2000}

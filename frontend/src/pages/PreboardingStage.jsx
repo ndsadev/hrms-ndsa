@@ -7,11 +7,43 @@ import { useNavigate } from "react-router-dom";
 import PreboardingStageForm from "../components/PreboardingStageForm";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { useLocation } from "react-router-dom";
+
+const splitFullName = (fullName = "") => {
+  const parts = fullName.trim().split(/\s+/);
+
+  if (parts.length === 1) {
+    return {
+      firstName: parts[0],
+      middleName: "",
+      lastName: "",
+    };
+  }
+
+  if (parts.length === 2) {
+    return {
+      firstName: parts[0],
+      middleName: "",
+      lastName: parts[1],
+    };
+  }
+
+  return {
+    firstName: parts[0],
+    middleName: parts.slice(1, -1).join(" "),
+    lastName: parts[parts.length - 1],
+  };
+};
+
 
 const PreboardingStage = () => {
   const [step, setStep] = useState(1);
   const [employees, setEmployees] = useState([]);
   const navigate = useNavigate();
+  const location = useLocation();
+  const employee = location.state?.employee;
+  const nameParts = splitFullName(employee?.name || "");
+
 
   useEffect(() => {
     const stored = localStorage.getItem("employees");
@@ -23,15 +55,17 @@ const PreboardingStage = () => {
   }, [employees]);
 
   const [formData, setFormData] = useState({
+    employeeId: employee?.employeeId || "",
+
     profilePic: null,
 
-    firstName: "",
-    middleName: "",
-    lastName: "",
+    firstName: nameParts.firstName,
+    middleName: nameParts.middleName,
+    lastName: nameParts.lastName,
 
     dob: "",
-    email: "",
-    phone: "",
+    email: employee?.email || "",
+    phone: employee?.phone || "",
     bloodGroup: "",
     address: "",
 
@@ -73,8 +107,8 @@ const PreboardingStage = () => {
     emergencyPhone: "",
     emergencyAlternatePhone: "",
     emergencyAddress: "",
-
   });
+
 
   const [errors, setErrors] = useState({});
 

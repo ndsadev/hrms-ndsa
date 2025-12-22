@@ -23,11 +23,11 @@ export const useLogin = () => {
 
       const { accessToken, refreshToken, user } = res.data;
 
-      // ✅ Save tokens
+      // Save tokens
       localStorage.setItem("accessToken", accessToken);
       localStorage.setItem("refreshToken", refreshToken);
 
-      // ✅ Redux update
+      // Redux update
       dispatch(
         setUser({
           user,
@@ -35,13 +35,13 @@ export const useLogin = () => {
         })
       );
 
-      // ✅ clear any previous error
+      // clear any previous error
       dispatch(setError(null));
       setLocalError(null);
 
       dispatch(setLoading(false));
 
-      // 🔥 MUST return user for role-based redirect
+      // MUST return user for role-based redirect
       return {
         success: true,
         user,

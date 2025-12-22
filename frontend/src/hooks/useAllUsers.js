@@ -15,39 +15,35 @@ const useAllUsers = () => {
   const [showModal, setShowModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
 
-  // ======================
-  // 🔥 FETCH ALL USERS
-  // ======================
-const fetchAllUsers = async () => {
-  try {
-    if (users.length === 0) {
-      dispatch(setAllUsersLoading(true));
+  // Fetch all user
+  const fetchAllUsers = async () => {
+    try {
+      if (users.length === 0) {
+        dispatch(setAllUsersLoading(true));
+      }
+
+      const res = await api({
+        url: SummaryApi.getAllUsers.url,
+        method: SummaryApi.getAllUsers.method,
+      });
+
+      dispatch(setAllUsers(res.data?.users || []));
+    } catch (err) {
+      dispatch(
+        setAllUsersError(
+          err.response?.data?.message || "Failed to load users"
+        )
+      );
     }
-
-    const res = await api({
-      url: SummaryApi.getAllUsers.url,
-      method: SummaryApi.getAllUsers.method,
-    });
-
-    dispatch(setAllUsers(res.data?.users || []));
-  } catch (err) {
-    dispatch(
-      setAllUsersError(
-        err.response?.data?.message || "Failed to load users"
-      )
-    );
-  }
-};
+  };
 
 
-useEffect(() => {
-  fetchAllUsers();
-  // eslint-disable-next-line
-}, []);
+  useEffect(() => {
+    fetchAllUsers();
+    // eslint-disable-next-line
+  }, []);
 
-  // ======================
-  // MODAL HANDLERS
-  // ======================
+  // Modal Handler
   const openEditModal = (user) => {
     setSelectedUser({ ...user });
     setShowModal(true);
@@ -58,12 +54,10 @@ useEffect(() => {
     setSelectedUser(null);
   };
 
-  // ======================
-  // 🔥 UPDATE USER
-  // ======================
+  // Update user
   const updateUser = async () => {
     try {
-    //   dispatch(setAllUsersLoading(true));
+      //   dispatch(setAllUsersLoading(true));
 
       await api({
         url: SummaryApi.updateUser.url(selectedUser._id),
@@ -92,12 +86,10 @@ useEffect(() => {
     }
   };
 
-  // ======================
-  // 🔥 DELETE USER
-  // ======================
+  // Delete User
   const deleteUser = async (userId) => {
     try {
-    //   dispatch(setAllUsersLoading(true));
+      //   dispatch(setAllUsersLoading(true));
 
       await api({
         url: SummaryApi.deleteUser.url(userId),

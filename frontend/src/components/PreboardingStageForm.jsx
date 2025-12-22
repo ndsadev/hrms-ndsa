@@ -24,7 +24,58 @@ const PreboardingStageForm = ({
             {/* Step 1: Personal */}
             {step === 1 && (
                 <>
-                    <h5>Personal Details</h5>
+                    <Row className="align-items-center mb-3 justify-content-between">
+                        {/* LEFT : TITLE */}
+                        <Col xs="auto">
+                            <h5 className="mb-0">Personal Details</h5>
+                        </Col>
+
+                        {/* RIGHT : EMP ID BADGE */}
+                        <Col xs="auto" className="d-flex justify-content-end">
+                            {formData?.employeeId && (
+                                <div
+                                    style={{
+                                        background: "#06406ec7",
+                                        borderRadius: "24px",
+                                        padding: "8px 14px",
+                                        width: "216px",
+                                        overflow: "hidden",
+                                        color: "#fff",
+                                        fontWeight: 600,
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: "8px",
+                                    }}
+                                >
+                                    {/* FIXED ID CHIP */}
+                                    <span
+                                        style={{
+                                            background: "#043154",
+                                            padding: "4px 10px",
+                                            borderRadius: "14px",
+                                            fontSize: "13px",
+                                            whiteSpace: "nowrap",
+                                        }}
+                                    >
+                                        ID
+                                    </span>
+
+                                    {/* MOVING TEXT ONLY */}
+                                    <marquee
+                                        behavior="scroll"
+                                        direction="left"
+                                        scrollAmount="5"
+                                        style={{
+                                            whiteSpace: "nowrap",
+                                            fontSize: "14px",
+                                        }}
+                                    >
+                                        Employee ID : {formData.employeeId}
+                                    </marquee>
+                                </div>
+                            )}
+                        </Col>
+                    </Row>
 
                     <Form.Group className="mb-3">
                         <Form.Label>Profile Picture</Form.Label>
@@ -35,7 +86,7 @@ const PreboardingStageForm = ({
                         />
                     </Form.Group>
 
-                    {/* 🔽 UPDATED HERE (Full Name removed) */}
+                    {/* UPDATED HERE (Full Name removed) */}
                     <Row>
                         <Col md={4}>
                             <Form.Group className="mb-3">
@@ -75,7 +126,7 @@ const PreboardingStageForm = ({
                             </Form.Group>
                         </Col>
                     </Row>
-                    {/* 🔼 UPDATED HERE */}
+                    {/* UPDATED HERE */}
 
                     <Row>
                         <Col>
@@ -229,7 +280,7 @@ const PreboardingStageForm = ({
                                             name="name"
                                             value={cert.name}
                                             onChange={(e) => handleCertificationChange(index, e)}
-                                            
+
                                         />
                                     </Form.Group>
                                 </Col>

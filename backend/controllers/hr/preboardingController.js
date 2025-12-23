@@ -1,8 +1,6 @@
 const PreboardingProfile = require("../../models/PreboardingProfile");
 
-/* --------------------------------------------------
-   Helper: Map single Cloudinary file
--------------------------------------------------- */
+// Helper
 const mapSingleFile = (file) => {
   if (!file) return null;
   return {
@@ -11,23 +9,33 @@ const mapSingleFile = (file) => {
   };
 };
 
-/* --------------------------------------------------
-   Helper: Map multiple Cloudinary files
--------------------------------------------------- */
-const mapMultipleFiles = (files) => {
-  if (!files || !files.length) return [];
-  return files.map((file) => ({
-    url: file.path,
-    publicId: file.filename,
-  }));
+// SAFE JSON PARSE (UPDATE–1)
+const safeJsonParse = (value, fallback) => {
+  try {
+    if (!value) return fallback;
+    if (typeof value === "string") return JSON.parse(value);
+    return value;
+  } catch (err) {
+    return fallback;
+  }
 };
 
-/* ==================================================
-   CREATE / UPDATE PREBOARDING PROFILE (STEP-WISE)
-================================================== */
+//  CREATE / UPDATE PREBOARDING PROFILE
 exports.savePreboardingProfile = async (req, res) => {
   try {
+    console.log("========== PREBOARDING DEBUG START ==========");
+    console.log("BODY KEYS:", Object.keys(req.body));
+    console.log("FILES OBJECT:", req.files);
+    console.log("===========================================");
+
     const userId = req.user._id;
+
+    // UPDATE–1: SAFE PARSING
+    const education = safeJsonParse(req.body.education, []);
+    const certifications = safeJsonParse(req.body.certifications, []);
+    const experiences = safeJsonParse(req.body.experiences, []);
+    const bankDetails = safeJsonParse(req.body.bankDetails, null);
+    const emergencyContact = safeJsonParse(req.body.emergencyContact, null);
 
     // Find or create profile
     let profile = await PreboardingProfile.findOne({ userId });
@@ -43,103 +51,90 @@ exports.savePreboardingProfile = async (req, res) => {
     /* =========================
        STEP 1: PERSONAL DETAILS
     ========================== */
-    if (req.body.firstName) {
-      profile.personalDetails = {
-        firstName: req.body.firstName,
-        middleName: req.body.middleName,
-        lastName: req.body.lastName,
-        dob: req.body.dob,
-        email: req.body.email,
-        phone: req.body.phone,
-        bloodGroup: req.body.bloodGroup,
-        address: req.body.address,
-        profilePic: req.files?.profilePic
-          ? mapSingleFile(req.files.profilePic[0])
-          : profile.personalDetails?.profilePic,
-      };
-    }
+    console.log("PROFILE PIC FILE:", req.files?.profilePic);
+
+    profile.personalDetails = {
+      firstName: req.body.firstName,
+      middleName: req.body.middleName,
+      lastName: req.body.lastName,
+      dob: req.body.dob,
+      email: req.body.email,
+      phone: req.body.phone,
+      bloodGroup: req.body.bloodGroup,
+      address: req.body.address,
+      profilePic: req.files?.profilePic
+        ? mapSingleFile(req.files.profilePic[0])
+        : profile.personalDetails?.profilePic,
+    };
 
     /* =========================
        STEP 2: EDUCATION
     ========================== */
-    if (req.body.qualification) {
-      const semesterResults = req.files?.semesterResults
-        ? req.files.semesterResults.map((file, index) => ({
-            semester: index + 1,
-            file: mapSingleFile(file),
-          }))
-        : [];
+    profile.education = education.map((edu) => ({
+      qualification: edu.qualification,
+      university: edu.university,
+      passingYear: edu.passingYear,
+      semesterResults: [],
+    }));
 
-      profile.education.push({
-        qualification: req.body.qualification,
-        university: req.body.university,
-        passingYear: req.body.passingYear,
-        semesterResults,
+    // ✅ Semester files
+    if (req.files?.semesterResults?.length && profile.education.length) {
+      req.files.semesterResults.forEach((file, i) => {
+        profile.education[0].semesterResults.push({
+          semester: i + 1,
+          file: mapSingleFile(file),
+        });
       });
     }
 
     /* =========================
        STEP 3: CERTIFICATIONS
     ========================== */
-    if (req.body.certificationName) {
-      profile.certifications.push({
-        name: req.body.certificationName,
-        file: req.files?.certificationFile
-          ? mapSingleFile(req.files.certificationFile[0])
-          : null,
-      });
-    }
+    profile.certifications = certifications.map((cert, index) => ({
+      name: cert.name,
+      file: req.files?.certificationFile?.[index]
+        ? mapSingleFile(req.files.certificationFile[index])
+        : null,
+    }));
 
     /* =========================
        STEP 4: EXPERIENCE
     ========================== */
-    if (req.body.company) {
-      profile.experiences.push({
-        company: req.body.company,
-        designation: req.body.designation,
-        startDesignation: req.body.startDesignation,
-        endDesignation: req.body.endDesignation,
-        startDate: req.body.startDate,
-        endDate: req.body.endDate,
+    profile.experiences = experiences.map((exp, index) => ({
+      company: exp.company,
+      designation: exp.designation,
+      startDesignation: exp.startDesignation,
+      endDesignation: exp.endDesignation,
+      startDate: exp.startDate,
+      endDate: exp.endDate,
 
-        offerLetter: req.files?.offerLetter
-          ? mapSingleFile(req.files.offerLetter[0])
-          : null,
+      offerLetter: req.files?.offerLetter?.[index]
+        ? mapSingleFile(req.files.offerLetter[index])
+        : null,
 
-        experienceLetter: req.files?.experienceLetter
-          ? mapSingleFile(req.files.experienceLetter[0])
-          : null,
+      experienceLetter: req.files?.experienceLetter?.[index]
+        ? mapSingleFile(req.files.experienceLetter[index])
+        : null,
 
-        appointmentLetter: req.files?.appointmentLetter
-          ? mapSingleFile(req.files.appointmentLetter[0])
-          : null,
+      appointmentLetter: req.files?.appointmentLetter?.[index]
+        ? mapSingleFile(req.files.appointmentLetter[index])
+        : null,
 
-        salarySlip: req.files?.salarySlip
-          ? mapSingleFile(req.files.salarySlip[0])
-          : null,
-      });
-    }
+      salarySlip: req.files?.salarySlip?.[index]
+        ? mapSingleFile(req.files.salarySlip[index])
+        : null,
+    }));
 
     /* =========================
        STEP 5: BANK DETAILS
     ========================== */
-    if (req.body.accountHolder) {
+    if (bankDetails) {
       profile.bankDetails = {
-        accountHolder: req.body.accountHolder,
-        bankName: req.body.bankName,
-        branch: req.body.branch,
-        bankEmail: req.body.bankEmail,
-        bankPhone: req.body.bankPhone,
-        accountNo: req.body.accountNo,
-        ifsc: req.body.ifsc,
-        registerNo: req.body.registerNo,
-
-        aadharNo: req.body.aadharNo,
+        ...bankDetails,
         aadharFile: req.files?.aadharFile
           ? mapSingleFile(req.files.aadharFile[0])
           : profile.bankDetails?.aadharFile,
 
-        panNo: req.body.panNo,
         panFile: req.files?.panFile
           ? mapSingleFile(req.files.panFile[0])
           : profile.bankDetails?.panFile,
@@ -153,17 +148,13 @@ exports.savePreboardingProfile = async (req, res) => {
     /* =========================
        STEP 6: EMERGENCY CONTACT
     ========================== */
-    if (req.body.emergencyName) {
-      profile.emergencyContact = {
-        name: req.body.emergencyName,
-        relation: req.body.relation,
-        phone: req.body.emergencyPhone,
-        alternatePhone: req.body.emergencyAlternatePhone,
-        address: req.body.emergencyAddress,
-      };
+    if (emergencyContact) {
+      profile.emergencyContact = emergencyContact;
     }
 
-    // Status update
+    /* =========================
+       STATUS
+    ========================== */
     if (req.body.submit === "true") {
       profile.status = "SUBMITTED";
     }
@@ -176,17 +167,16 @@ exports.savePreboardingProfile = async (req, res) => {
       data: profile,
     });
   } catch (error) {
-    console.error("Preboarding Error:", error);
-
+    console.error("❌ Preboarding Error FULL:", error);
     return res.status(500).json({
       success: false,
-      message: "Server error while saving preboarding profile",
+      message: error.message || "Server error while saving preboarding profile",
     });
   }
 };
 
 /* ==================================================
-   GET PREBOARDING PROFILE (HR / USER)
+   GET PREBOARDING PROFILE
 ================================================== */
 exports.getPreboardingProfile = async (req, res) => {
   try {

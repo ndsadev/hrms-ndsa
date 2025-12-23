@@ -1,15 +1,12 @@
+require("dotenv").config(); 
+
 const express = require("express");
-const dotenv = require("dotenv");
 const cors = require("cors");
 const morgan = require("morgan");
 const connectDB = require("./config/db");
 
-// ROUTES
 const authRoutes = require("./routes/authRoutes");
 const preboardingRoutes = require("./routes/preboardingRoutes");
-
-// Load env variables
-dotenv.config();
 
 // Connect MongoDB
 connectDB();
@@ -17,24 +14,37 @@ connectDB();
 // Initialize app
 const app = express();
 
-/* =================================================
-   GLOBAL MIDDLEWARES
-================================================= */
-app.use(cors({
-  origin: process.env.CLIENT_URL || "*",
-  credentials: true,
-}));
+//  CORS CONFIG (LOCAL DEV)
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+];
 
-app.use(express.json({ limit: "20mb" }));
-app.use(express.urlencoded({ extended: true }));
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+      callback(new Error("CORS not allowed"));
+    },
+    credentials: true,
+  })
+);
 
+// Logger
 if (process.env.NODE_ENV === "development") {
   app.use(morgan("dev"));
 }
 
-/* =================================================
-   HEALTH CHECK
-================================================= */
+// Body Parser
+app.use(express.json({ limit: "20mb" }));
+app.use(express.urlencoded({ extended: true }));
+
+// API routes
+app.use("/api/auth", authRoutes);
+app.use("/api/hr", preboardingRoutes);
+
+// Health check
 app.get("/", (req, res) => {
   res.status(200).json({
     success: true,
@@ -42,27 +52,16 @@ app.get("/", (req, res) => {
   });
 });
 
-/* =================================================
-   API ROUTES
-================================================= */
-app.use("/api/auth", authRoutes);
-app.use("/api/hr", preboardingRoutes);
-
-/* =================================================
-   GLOBAL ERROR HANDLER (MULTER + OTHERS)
-================================================= */
+// Global error handler
 app.use((err, req, res, next) => {
-  console.error("❌ Error:", err.message);
-
+  console.error("❌ Error:", err);
   res.status(500).json({
     success: false,
     message: err.message || "Internal Server Error",
   });
 });
 
-/* =================================================
-   404 HANDLER
-================================================= */
+// 404 handler
 app.use((req, res) => {
   res.status(404).json({
     success: false,
@@ -70,9 +69,7 @@ app.use((req, res) => {
   });
 });
 
-/* =================================================
-   SERVER LISTEN
-================================================= */
+// Server listen
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);

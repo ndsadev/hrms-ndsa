@@ -8,6 +8,63 @@ import PreboardingStageForm from "../components/PreboardingStageForm";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useLocation } from "react-router-dom";
+import usePreboarding from "../hooks/usePreboarding";
+
+const getInitialFormData = (employee, nameParts) => ({
+  employeeId: employee?.employeeId || "",
+
+  profilePic: null,
+
+  firstName: nameParts.firstName,
+  middleName: nameParts.middleName,
+  lastName: nameParts.lastName,
+
+  dob: "",
+  email: employee?.email || "",
+  phone: employee?.phone || "",
+  bloodGroup: "",
+  address: "",
+
+  education: [
+    { qualification: "", university: "", passingYear: "", semesterResults: [] },
+  ],
+  certifications: [{ name: "", file: null }],
+  experiences: [
+    {
+      company: "",
+      designation: "",
+      startDesignation: "",
+      endDesignation: "",
+      startDate: "",
+      endDate: "",
+      offerLetter: null,
+      experienceLetter: null,
+      appointmentLetter: null,
+      salarySlip: null,
+    },
+  ],
+
+  accountHolder: "",
+  bankName: "",
+  branch: "",
+  bankEmail: "",
+  bankPhone: "",
+  accountNo: "",
+  ifsc: "",
+  registerNo: "",
+  aadharNo: "",
+  aadharFile: null,
+  panNo: "",
+  panFile: null,
+  cancelCheque: null,
+
+  emergencyName: "",
+  relation: "",
+  emergencyPhone: "",
+  emergencyAlternatePhone: "",
+  emergencyAddress: "",
+});
+
 
 const splitFullName = (fullName = "") => {
   const parts = fullName.trim().split(/\s+/);
@@ -43,6 +100,7 @@ const PreboardingStage = () => {
   const location = useLocation();
   const employee = location.state?.employee;
   const nameParts = splitFullName(employee?.name || "");
+  const { saveProfile } = usePreboarding();
 
 
   useEffect(() => {
@@ -54,75 +112,23 @@ const PreboardingStage = () => {
     localStorage.setItem("employees", JSON.stringify(employees));
   }, [employees]);
 
-  const [formData, setFormData] = useState({
-    employeeId: employee?.employeeId || "",
-
-    profilePic: null,
-
-    firstName: nameParts.firstName,
-    middleName: nameParts.middleName,
-    lastName: nameParts.lastName,
-
-    dob: "",
-    email: employee?.email || "",
-    phone: employee?.phone || "",
-    bloodGroup: "",
-    address: "",
-
-    education: [
-      { qualification: "", university: "", passingYear: "", semesterResults: [] },
-    ],
-    certifications: [{ name: "", file: null }],
-    experiences: [
-      {
-        company: "",
-        designation: "",
-        startDesignation: "",
-        endDesignation: "",
-        startDate: "",
-        endDate: "",
-        offerLetter: null,
-        experienceLetter: null,
-        appointmentLetter: null,
-        salarySlip: null,
-      },
-    ],
-
-    accountHolder: "",
-    bankName: "",
-    branch: "",
-    bankEmail: "",
-    bankPhone: "",
-    accountNo: "",
-    ifsc: "",
-    registerNo: "",
-    aadharNo: "",
-    aadharFile: null,
-    panNo: "",
-    panFile: null,
-    cancelCheque: null,
-
-    emergencyName: "",
-    relation: "",
-    emergencyPhone: "",
-    emergencyAlternatePhone: "",
-    emergencyAddress: "",
-  });
-
+  const [formData, setFormData] = useState(
+    getInitialFormData(employee, nameParts)
+  );
 
   const [errors, setErrors] = useState({});
 
   const totalSteps = 6;
   const percentage = Math.round((step / totalSteps) * 100);
 
-  // ================= COMMON HANDLERS =================
+  // common handler
   const handleChange = (e) =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
 
   const handleFileChange = (e) =>
     setFormData({ ...formData, [e.target.name]: e.target.files[0] });
 
-  // ================= EDUCATION =================
+  // education
   const handleEducationChange = (index, e) => {
     const updated = [...formData.education];
     updated[index][e.target.name] = e.target.value;
@@ -150,7 +156,7 @@ const PreboardingStage = () => {
       education: formData.education.filter((_, i) => i !== index),
     });
 
-  // ================= CERTIFICATION =================
+  // certificate
   const handleCertificationChange = (index, e) => {
     const updated = [...formData.certifications];
     updated[index][e.target.name] = e.target.value;
@@ -175,7 +181,7 @@ const PreboardingStage = () => {
       certifications: formData.certifications.filter((_, i) => i !== index),
     });
 
-  // ================= EXPERIENCE =================
+  // experience
   const handleExperienceChange = (index, e) => {
     const updated = [...formData.experiences];
     updated[index][e.target.name] = e.target.value;
@@ -214,7 +220,7 @@ const PreboardingStage = () => {
       experiences: formData.experiences.filter((_, i) => i !== index),
     });
 
-  // ================= VALIDATION =================
+  // validation
   const validateStep = () => {
     let stepErrors = {};
 
@@ -255,7 +261,6 @@ const PreboardingStage = () => {
           stepErrors.emergencyAlternatePhone = "Alternate Phone required.";
         break;
 
-
       default:
         break;
     }
@@ -270,21 +275,21 @@ const PreboardingStage = () => {
   };
 
   const prevStep = () => setStep(step - 1);
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateStep()) return;
 
-    const fullName = `${formData.firstName} ${formData.middleName} ${formData.lastName}`.trim();
+    // backend save
+    const res = await saveProfile(formData);
 
-    const updatedEmployees = [
-      ...employees,
-      { id: employees.length + 1, name: fullName, data: formData },
-    ];
+    if (!res?.success) {
+      toast.error("Failed to save preboarding profile");
+      return;
+    }
 
-    setEmployees(updatedEmployees);
-    toast.success("Profile Created Successfully!");
-    navigate("/employees", { state: { employees: updatedEmployees } });
+    toast.success("Preboarding Profile Saved Successfully!");
+    setFormData(getInitialFormData(employee, nameParts));
+    setStep(1);
   };
 
   return (
@@ -326,7 +331,7 @@ const PreboardingStage = () => {
         <ProgressBar now={percentage} className="mb-3" variant="info" animated />
 
         <Card className="shadow-lg p-4 rounded mb-4">
-          <Form onSubmit={handleSubmit}>
+          <Form onSubmit={handleSubmit} encType="multipart/form-data">
             <PreboardingStageForm
               step={step}
               formData={formData}

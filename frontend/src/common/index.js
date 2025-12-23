@@ -32,13 +32,13 @@ const SummaryApi = {
     method: "get",
   },
 
-   // ALL USERS (SUPER ADMIN)
+  // ALL USERS (SUPER ADMIN)
   getAllUsers: {
     url: `${backendDomain}/api/auth/all-users`,
     method: "get",
   },
 
-    // UPDATE USER ROLE / DESIGNATION
+  // UPDATE USER ROLE / DESIGNATION
   updateUser: {
     url: (userId) =>
       `${backendDomain}/api/auth/update-user/${userId}`,
@@ -50,6 +50,27 @@ const SummaryApi = {
     url: (userId) =>
       `${backendDomain}/api/auth/delete-user/${userId}`,
     method: "delete",
+  },
+
+
+  // CREATE / UPDATE PREBOARDING PROFILE (WITH FILES)
+  savePreboardingProfile: {
+    url: `${backendDomain}/api/hr/preboarding`,
+    method: "post",
+  },
+
+  // GET PREBOARDING PROFILE (LOGGED-IN USER)
+  getPreboardingProfile: {
+    url: `${backendDomain}/api/hr/preboarding`,
+    method: "get",
+  },
+
+  // (OPTIONAL – FUTURE USE)
+  // GET PREBOARDING PROFILE BY USER ID (HR / ADMIN)
+  getPreboardingProfileByUser: {
+    url: (userId) =>
+      `${backendDomain}/api/hr/preboarding/${userId}`,
+    method: "get",
   },
 };
 

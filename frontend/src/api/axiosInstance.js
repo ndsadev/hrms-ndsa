@@ -4,9 +4,6 @@ import SummaryApi from "../common/index";
 // Axios Instance
 const api = axios.create({
   baseURL: "http://localhost:5000",
-  headers: {
-    "Content-Type": "application/json",
-  },
 });
 
 // Request Intercepter

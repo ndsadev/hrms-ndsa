@@ -81,9 +81,10 @@ const PreboardingStageForm = ({
                         <Form.Label>Profile Picture</Form.Label>
                         <Form.Control
                             type="file"
-                            name="profilePicture"
+                            name="profilePic"
                             onChange={handleFileChange}
                         />
+
                     </Form.Group>
 
                     {/* UPDATED HERE (Full Name removed) */}
@@ -168,13 +169,14 @@ const PreboardingStageForm = ({
                     <Form.Group className="mb-3">
                         <Form.Label>Phone Number*</Form.Label>
                         <Form.Control
-                            type="number"
+                            type="text"
+                            inputMode="numeric"
+                            pattern="[0-9]{10}"
                             name="phone"
                             value={formData.phone}
                             onChange={handleChange}
-                            pattern="[0-9]{10}"
-                            required
                         />
+
                     </Form.Group>
 
                     <Form.Group className="mb-3">

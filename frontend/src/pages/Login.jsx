@@ -26,7 +26,7 @@ const Login = () => {
     password: "",
   });
 
-  // 🔥 SHOW LOGOUT SUCCESS TOAST HERE
+  // SHOW LOGOUT SUCCESS TOAST HERE
   useEffect(() => {
     if (location.state?.fromLogout) {
       toast.success("Logged out successfully");
@@ -50,11 +50,11 @@ const Login = () => {
 
       const role = result.user?.role;
 
-      // 🔥 ROLE BASED REDIRECT
+      // ROLE BASED REDIRECT
       if (role === "SUPER_ADMIN") {
         navigate("/dashboard/all-users", { replace: true });
       } else if (role === "HR") {
-        navigate("/dashboard/preboarding-stage", { replace: true });
+        navigate("/dashboard/employee-list", { replace: true });
       } else if (role === "ADMIN") {
         navigate("/dashboard/assets", { replace: true });
       } else {

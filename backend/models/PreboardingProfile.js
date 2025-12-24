@@ -7,12 +7,12 @@ const PreboardingProfileSchema = new mongoose.Schema(
             type: mongoose.Schema.Types.ObjectId,
             ref: "User",
             required: true,
-            unique: true,
         },
 
         employeeId: {
             type: String,
             required: true,
+            unique: true,
             index: true,
         },
 

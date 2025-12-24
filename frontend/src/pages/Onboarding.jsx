@@ -4,6 +4,9 @@ import { HiOutlineDocumentArrowUp } from "react-icons/hi2";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import ProfileForm from "../components/PreboardingStageForm";
+import api from "../api/axiosInstance";
+import SummaryApi from "../common";
+import { FaEye, FaEdit, FaTrash } from "react-icons/fa";
 
 const Onboarding = () => {
     const initialFormData = {
@@ -83,13 +86,22 @@ const Onboarding = () => {
     const [uploadData, setUploadData] = useState(initialFormData.uploadDocuments);
 
     useEffect(() => {
-        const stored = localStorage.getItem("employees");
-        if (stored) setEmployees(JSON.parse(stored));
+        fetchEmployees();
     }, []);
 
-    useEffect(() => {
-        localStorage.setItem("employees", JSON.stringify(employees));
-    }, [employees]);
+    const fetchEmployees = async () => {
+        try {
+            const res = await api.get(
+                SummaryApi.getPreboardingList.url
+            );
+
+            setEmployees(res.data.data); // backend array
+        } catch (error) {
+            console.error(error);
+            toast.error("Failed to load employees");
+        }
+    };
+
 
     const handleDelete = (id) => {
         if (window.confirm("⚠️ Delete this employee?")) {
@@ -167,25 +179,85 @@ const Onboarding = () => {
     return (
         <>
             <style>{`
-    .page-header {
+  .page-header {
     background: #70a664a1;
-    padding: 13px 30px;
     color: white;
-    font-size: 25px;
+    padding: 14px 20px;
+    border-radius: 10px;
+    margin-bottom: 18px;
+  }
+
+  .page-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 22px;
     font-weight: 700;
-    border-radius: 8px;
-    margin-bottom: 20px;
-    border: 1px solid #70a66433;
-    }
-      .page-title{
-      font-size: 22px;
-    font-weight: 700;
-      }
-    .table-heading{
-        background-color: #06406e !important;
-    color: white !important;
-    }
-  `}</style>
+  }
+
+  .users-card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 6px 25px rgba(0,0,0,0.08);
+    overflow-x: auto;
+  }
+
+  .users-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .users-table thead {
+    background: #06406e;
+    color: white;
+  }
+
+  .users-table th,
+  .users-table td {
+    padding: 9px 14px;
+    text-align: center;
+    border-bottom: 1px solid #e5e5e5;
+    white-space: nowrap;
+  }
+
+  .doc-icon {
+    cursor: pointer;
+    color: #6c63ff;
+  }
+
+  .action-group {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+  }
+
+  .action-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .view-btn {
+    background: #cadffb;
+    color: #0d6efd;
+  }
+
+  .edit-btn {
+  background: #d4f8dd;
+    color: #198754;
+  }
+
+  .delete-btn {
+    background: #fde2e2;
+    color: #dc3545;
+  }
+`}</style>
+
 
             <Container>
                 <div className="d-flex justify-content-between align-items-center page-header flex-wrap gap-2">
@@ -195,59 +267,103 @@ const Onboarding = () => {
                 </div>
 
                 <div style={{ borderRadius: "12px", border: "1px solid #ddd", overflowX: "auto" }}>
-                    <Table striped bordered hover className="align-middle mb-0">
-                        <thead>
-                            <tr>
-                                <th className="table-heading">ID</th>
-                                <th className="table-heading">Full Name</th>
-                                <th className="table-heading">Email</th>
-                                <th className="table-heading">Upload Documents</th>
-                                <th className="table-heading">Visibility</th>
-                                <th className="table-heading">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {employees.length > 0 ? (
-                                employees.map((emp) => (
-                                    <tr key={emp.id}>
-                                        <td>{emp.id}</td>
-                                        <td>{emp.name}</td>
-                                        <td>{emp.email}</td>
-                                        <td className="text-center">
-                                            <HiOutlineDocumentArrowUp
-                                                size={22}
-                                                style={{ cursor: "pointer", color: "#6c63ff" }}
-                                                title="Upload Documents"
-                                                onClick={() => {
-                                                    setSelectedEmployee(emp);
-                                                    setUploadData(emp.data?.uploadDocuments || initialFormData.uploadDocuments);
-                                                    setShowUploadModal(true);
-                                                }}
-                                            />
-                                        </td>
-                                        <td>{emp.visibility || "Private"}</td>
-                                        <td>
-                                            <Button variant="info" size="sm" className="me-2" onClick={() => handleView(emp)}>
-                                                View
-                                            </Button>
-                                            <Button variant="warning" size="sm" className="me-2" onClick={() => handleEdit(emp)}>
-                                                Edit
-                                            </Button>
-                                            <Button variant="danger" size="sm" onClick={() => handleDelete(emp.id)}>
-                                                Delete
-                                            </Button>
+                    <div className="users-card">
+                        <table className="users-table">
+                            <thead>
+                                <tr>
+                                    <th>Employee ID</th>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Upload Documents</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                {employees.length > 0 ? (
+                                    employees.map((emp) => (
+                                        <tr key={emp._id}>
+                                            <td>{emp.employeeId}</td>
+                                            <td>{emp.name || "—"}</td>
+                                            <td>{emp.email || "—"}</td>
+
+                                            {/* Upload Documents */}
+                                            <td>
+                                                <HiOutlineDocumentArrowUp
+                                                    size={22}
+                                                    className="doc-icon"
+                                                    title="Upload Documents"
+                                                    onClick={() => {
+                                                        setSelectedEmployee(emp);
+                                                        setUploadData(
+                                                            emp.uploadDocuments || initialFormData.uploadDocuments
+                                                        );
+                                                        setShowUploadModal(true);
+                                                    }}
+                                                />
+                                            </td>
+
+                                            {/* Status */}
+                                            <td>
+                                                <span
+                                                    className={`badge ${emp.status === "SUBMITTED"
+                                                        ? "bg-warning"
+                                                        : emp.status === "VERIFIED"
+                                                            ? "bg-success"
+                                                            : "bg-secondary"
+                                                        }`}
+                                                >
+                                                    {emp.status}
+                                                </span>
+                                            </td>
+
+                                            {/* Actions */}
+                                            <td>
+                                                <div className="action-group">
+                                                    {/* View */}
+                                                    <button
+                                                        className="action-btn view-btn"
+                                                        title="View Profile"
+                                                        onClick={() => handleView(emp)}
+                                                    >
+                                                        <FaEye size={14} />
+                                                    </button>
+
+                                                    {/* Edit */}
+                                                    <button
+                                                        className="action-btn edit-btn"
+                                                        title="Edit Profile"
+                                                        onClick={() => handleEdit(emp)}
+                                                    >
+                                                        <FaEdit size={14} />
+                                                    </button>
+
+                                                    {/* Delete */}
+                                                    <button
+                                                        className="action-btn delete-btn"
+                                                        title="Delete Profile"
+                                                        onClick={() => handleDelete(emp._id)}
+                                                    >
+                                                        <FaTrash size={14} />
+                                                    </button>
+                                                </div>
+                                            </td>
+
+                                        </tr>
+                                    ))
+                                ) : (
+                                    <tr>
+                                        <td colSpan="6" style={{ padding: 20 }}>
+                                            No Employees Found
                                         </td>
                                     </tr>
-                                ))
-                            ) : (
-                                <tr>
-                                    <td colSpan="6" className="text-center">
-                                        No Employees Added Yet
-                                    </td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </Table>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+
+
                 </div>
 
                 {/* View/Edit Modal */}

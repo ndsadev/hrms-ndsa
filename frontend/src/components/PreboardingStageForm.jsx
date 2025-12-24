@@ -324,7 +324,12 @@ const PreboardingStageForm = ({
             {/* Step 4: Work Experience */}
             {step === 4 && (
                 <>
-                    <h5>Work Experience</h5>
+                    <h5>
+                        Work Experience{" "}
+                        <span className="text-muted" style={{ fontSize: "13px" }}>
+                            (Optional – Fresher allowed)
+                        </span>
+                    </h5>
                     {formData.experiences.map((exp, index) => (
                         <Card key={index} className="p-3 mb-3 shadow-sm">
                             <Row>

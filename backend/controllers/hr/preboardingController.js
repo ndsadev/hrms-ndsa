@@ -1,6 +1,8 @@
 const PreboardingProfile = require("../../models/PreboardingProfile");
 
-// Helper
+// ==================================================
+// Helper: File Mapper
+// ==================================================
 const mapSingleFile = (file) => {
   if (!file) return null;
   return {
@@ -9,7 +11,9 @@ const mapSingleFile = (file) => {
   };
 };
 
-// SAFE JSON PARSE (UPDATE–1)
+// ==================================================
+// Helper: Safe JSON Parse
+// ==================================================
 const safeJsonParse = (value, fallback) => {
   try {
     if (!value) return fallback;
@@ -20,7 +24,47 @@ const safeJsonParse = (value, fallback) => {
   }
 };
 
-//  CREATE / UPDATE PREBOARDING PROFILE
+// ==================================================
+// ✅ UPDATE–1: REQUIRED FIELDS COMPLETION CHECK
+// (Experience intentionally OPTIONAL)
+// ==================================================
+const isProfileComplete = (profile) => {
+  const p = profile.personalDetails || {};
+  const bank = profile.bankDetails || {};
+  const emergency = profile.emergencyContact || {};
+
+  // STEP 1 – Personal
+  if (!p.firstName || !p.lastName || !p.dob || !p.email || !p.phone) {
+    return false;
+  }
+
+  // STEP 2 – Education
+  if (!profile.education?.length || !profile.education[0]?.qualification) {
+    return false;
+  }
+
+  // STEP 3 – Certification
+  if (!profile.certifications?.length || !profile.certifications[0]?.name) {
+    return false;
+  }
+
+  // STEP 5 – Bank
+  if (!bank.accountHolder || !bank.bankName || !bank.accountNo || !bank.ifsc) {
+    return false;
+  }
+
+  // STEP 6 – Emergency ✅ FIXED
+  if (!emergency.emergencyName || !emergency.emergencyPhone) {
+    return false;
+  }
+
+  // STEP 4 – Experience OPTIONAL
+  return true;
+};
+
+// ==================================================
+// CREATE / UPDATE PREBOARDING PROFILE
+// ==================================================
 exports.savePreboardingProfile = async (req, res) => {
   try {
     console.log("========== PREBOARDING DEBUG START ==========");
@@ -30,7 +74,7 @@ exports.savePreboardingProfile = async (req, res) => {
 
     const userId = req.user._id;
 
-    // UPDATE–1: SAFE PARSING
+    // SAFE PARSING
     const education = safeJsonParse(req.body.education, []);
     const certifications = safeJsonParse(req.body.certifications, []);
     const experiences = safeJsonParse(req.body.experiences, []);
@@ -38,21 +82,24 @@ exports.savePreboardingProfile = async (req, res) => {
     const emergencyContact = safeJsonParse(req.body.emergencyContact, null);
 
     // Find or create profile
-    let profile = await PreboardingProfile.findOne({ userId });
+    let profile = await PreboardingProfile.findOne({
+      employeeId: req.body.employeeId,
+    });
+
 
     if (!profile) {
       profile = new PreboardingProfile({
-        userId,
-        employeeId: req.body.employeeId,
+        userId,                 // HR
+        employeeId: req.body.employeeId, // EMPLOYEE (unique)
         createdBy: userId,
+        status: "IN_PROGRESS",
       });
     }
+
 
     /* =========================
        STEP 1: PERSONAL DETAILS
     ========================== */
-    console.log("PROFILE PIC FILE:", req.files?.profilePic);
-
     profile.personalDetails = {
       firstName: req.body.firstName,
       middleName: req.body.middleName,
@@ -77,7 +124,6 @@ exports.savePreboardingProfile = async (req, res) => {
       semesterResults: [],
     }));
 
-    // ✅ Semester files
     if (req.files?.semesterResults?.length && profile.education.length) {
       req.files.semesterResults.forEach((file, i) => {
         profile.education[0].semesterResults.push({
@@ -98,7 +144,7 @@ exports.savePreboardingProfile = async (req, res) => {
     }));
 
     /* =========================
-       STEP 4: EXPERIENCE
+       STEP 4: EXPERIENCE (OPTIONAL)
     ========================== */
     profile.experiences = experiences.map((exp, index) => ({
       company: exp.company,
@@ -153,10 +199,12 @@ exports.savePreboardingProfile = async (req, res) => {
     }
 
     /* =========================
-       STATUS
+       ✅ UPDATE–2: STATUS AUTO LOGIC
     ========================== */
     if (req.body.submit === "true") {
-      profile.status = "SUBMITTED";
+      profile.status = isProfileComplete(profile)
+        ? "SUBMITTED"
+        : "IN_PROGRESS";
     }
 
     await profile.save();
@@ -175,9 +223,9 @@ exports.savePreboardingProfile = async (req, res) => {
   }
 };
 
-/* ==================================================
-   GET PREBOARDING PROFILE
-================================================== */
+// ==================================================
+// GET PREBOARDING PROFILE (LOGGED-IN USER)
+// ==================================================
 exports.getPreboardingProfile = async (req, res) => {
   try {
     const profile = await PreboardingProfile.findOne({

@@ -72,6 +72,20 @@ const SummaryApi = {
       `${backendDomain}/api/hr/preboarding/${userId}`,
     method: "get",
   },
+
+   // employeeId | name | status
+  getPreboardingList: {
+    url: `${backendDomain}/api/hr/preboarding/all`,
+    method: "get",
+  },
+
+  //  HR VIEW (FULL PROFILE)
+  // used for View / Verify
+  getPreboardingProfileByEmployeeId: {
+    url: (employeeId) =>
+      `${backendDomain}/api/hr/preboarding/view/${employeeId}`,
+    method: "get",
+  },
 };
 
 export default SummaryApi;

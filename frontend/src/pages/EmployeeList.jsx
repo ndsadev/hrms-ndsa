@@ -4,10 +4,36 @@ import { FaUsers, FaUserEdit } from "react-icons/fa";
 import Loader from "../components/Loader";
 import useAllUsers from "../hooks/useAllUsers";
 import { useNavigate } from "react-router-dom";
+import api from "../api/axiosInstance";
+import SummaryApi from "../common";
+import { useState } from "react";
+import { useEffect } from "react";
+
 
 const EmployeeList = () => {
   const { users, loading } = useAllUsers();
+  const [preboardedIds, setPreboardedIds] = useState(new Set());
   const navigate = useNavigate();
+
+
+  useEffect(() => {
+    const fetchPreboardingList = async () => {
+      try {
+        const res = await api.get(SummaryApi.getPreboardingList.url);
+
+        // res.data.data = [{ employeeId, name, status }]
+        const ids = new Set(
+          res.data.data.map((item) => item.employeeId)
+        );
+
+        setPreboardedIds(ids);
+      } catch (error) {
+        console.error("Failed to fetch preboarding list", error);
+      }
+    };
+
+    fetchPreboardingList();
+  }, []);
 
   const handlePreboarding = (emp) => {
     navigate("/dashboard/preboarding-stage", {
@@ -114,13 +140,27 @@ const EmployeeList = () => {
                     <td>{emp.email}</td>
                     <td>{emp.phone || "-"}</td>
                     <td>
-                      <button
-                        className="action-btn"
-                        title="Start Preboarding"
-                        onClick={() => handlePreboarding(emp)}
-                      >
-                        <FaUserEdit />
-                      </button>
+                      {preboardedIds.has(emp.employeeId) ? (
+                        <span
+                          title="Preboarding started"
+                          style={{
+                            color: "green",
+                            fontSize: "18px",
+                            fontWeight: "bold",
+                            cursor: "default",
+                          }}
+                        >
+                          ✔
+                        </span>
+                      ) : (
+                        <button
+                          className="action-btn"
+                          title="Start Preboarding"
+                          onClick={() => handlePreboarding(emp)}
+                        >
+                          <FaUserEdit />
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))

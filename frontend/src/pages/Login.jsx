@@ -76,7 +76,7 @@ const Login = () => {
           background: #f5f6fa;
         }
         .logo-width {
-          width: 350px;
+          width: 100%;
         }
         .login-card {
           background: #fff;

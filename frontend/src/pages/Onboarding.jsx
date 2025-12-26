@@ -4,9 +4,10 @@ import { HiOutlineDocumentArrowUp } from "react-icons/hi2";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import ProfileForm from "../components/PreboardingStageForm";
-import api from "../api/axiosInstance";
-import SummaryApi from "../common";
 import { FaEye, FaEdit, FaTrash } from "react-icons/fa";
+import EmployeeProfileView from "../components/EmployeeProfileView";
+import useOnboarding from "../hooks/useOnboarding";
+
 
 const Onboarding = () => {
     const initialFormData = {
@@ -75,56 +76,28 @@ const Onboarding = () => {
         },
     };
 
-    const [employees, setEmployees] = useState([]);
-    const [selectedEmployee, setSelectedEmployee] = useState(null);
-    const [showModal, setShowModal] = useState(false);
-    const [editMode, setEditMode] = useState(false);
     const [formData, setFormData] = useState(initialFormData);
     const [currentStep, setCurrentStep] = useState(1);
-
     const [showUploadModal, setShowUploadModal] = useState(false);
     const [uploadData, setUploadData] = useState(initialFormData.uploadDocuments);
+    const {
+        employees,
+        fetchEmployees,
+        viewEmployee,
+        editEmployee,
+        deleteEmployee,
+        showModal,
+        setShowModal,
+        selectedEmployee,
+        loading,
+        mode,
+    } = useOnboarding();
+
 
     useEffect(() => {
-        fetchEmployees();
+        fetchEmployees((msg) => toast.error(msg));
     }, []);
 
-    const fetchEmployees = async () => {
-        try {
-            const res = await api.get(
-                SummaryApi.getPreboardingList.url
-            );
-
-            setEmployees(res.data.data); // backend array
-        } catch (error) {
-            console.error(error);
-            toast.error("Failed to load employees");
-        }
-    };
-
-
-    const handleDelete = (id) => {
-        if (window.confirm("⚠️ Delete this employee?")) {
-            setEmployees(employees.filter((emp) => emp.id !== id));
-            toast.error("🗑️ Employee deleted!");
-        }
-    };
-
-    const handleView = (employee) => {
-        setSelectedEmployee(employee);
-        setFormData(employee.data || initialFormData);
-        setEditMode(false); // View mode
-        setShowModal(true);
-        setCurrentStep(1);
-    };
-
-    const handleEdit = (employee) => {
-        setSelectedEmployee(employee);
-        setFormData(employee.data || initialFormData);
-        setEditMode(true); // Edit mode
-        setShowModal(true);
-        setCurrentStep(1);
-    };
 
     const handleChange = (e) => {
         const { name, value, files } = e.target;
@@ -325,7 +298,9 @@ const Onboarding = () => {
                                                     <button
                                                         className="action-btn view-btn"
                                                         title="View Profile"
-                                                        onClick={() => handleView(emp)}
+                                                        onClick={() =>
+                                                            viewEmployee(emp, (msg) => toast.error(msg))
+                                                        }
                                                     >
                                                         <FaEye size={14} />
                                                     </button>
@@ -334,7 +309,10 @@ const Onboarding = () => {
                                                     <button
                                                         className="action-btn edit-btn"
                                                         title="Edit Profile"
-                                                        onClick={() => handleEdit(emp)}
+                                                        onClick={() =>
+                                                            editEmployee(emp, (msg) => toast.error(msg))
+                                                        }
+
                                                     >
                                                         <FaEdit size={14} />
                                                     </button>
@@ -343,10 +321,50 @@ const Onboarding = () => {
                                                     <button
                                                         className="action-btn delete-btn"
                                                         title="Delete Profile"
-                                                        onClick={() => handleDelete(emp._id)}
+                                                        onClick={() =>
+                                                            toast(
+                                                                ({ closeToast }) => (
+                                                                    <div>
+                                                                        <p className="mb-2">
+                                                                            ⚠️ Are you sure you want to delete this employee?
+                                                                        </p>
+
+                                                                        <div className="d-flex justify-content-end gap-2">
+                                                                            <button
+                                                                                className="btn btn-sm btn-secondary"
+                                                                                onClick={closeToast}
+                                                                            >
+                                                                                Cancel
+                                                                            </button>
+
+                                                                            <button
+                                                                                className="btn btn-sm btn-danger"
+                                                                                onClick={() => {
+                                                                                    closeToast();
+                                                                                    deleteEmployee(
+                                                                                        emp,
+                                                                                        (msg) => toast.success(msg),
+                                                                                        (msg) => toast.error(msg)
+                                                                                    );
+                                                                                }}
+                                                                            >
+                                                                                Yes, Delete
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+                                                                ),
+                                                                {
+                                                                    autoClose: false,
+                                                                    closeButton: false,
+                                                                    closeOnClick: false,
+                                                                }
+                                                            )
+                                                        }
+
                                                     >
                                                         <FaTrash size={14} />
                                                     </button>
+
                                                 </div>
                                             </td>
 
@@ -369,47 +387,51 @@ const Onboarding = () => {
                 {/* View/Edit Modal */}
                 <Modal show={showModal} onHide={() => setShowModal(false)} size="xl">
                     <Modal.Header closeButton>
-                        <Modal.Title>{editMode ? "Edit Employee" : "Employee Details"}</Modal.Title>
+
+                        <Modal.Title>
+                            {mode === "edit" ? "Edit Employee" : "Employee Details"}
+                        </Modal.Title>
                     </Modal.Header>
                     <Modal.Body>
-                        {selectedEmployee && (
+                        {loading ? (
+                            <div className="text-center py-5">Loading...</div>
+                        ) : mode === "view" ? (
+                            <EmployeeProfileView data={selectedEmployee} />
+                        ) : (
                             <ProfileForm
                                 step={currentStep}
-                                formData={formData}
-                                handleChange={handleChange}
-                                handleNestedChange={handleNestedChange}
-                                editMode={editMode} // true = editable, false = read-only
+                                formData={selectedEmployee}
+                                editMode={true}
                             />
                         )}
-
-                        <div className="d-flex justify-content-between mt-3">
-                            {currentStep > 1 && (
-                                <Button variant="secondary" onClick={() => setCurrentStep(currentStep - 1)}>
-                                    Previous
-                                </Button>
-                            )}
-                            {currentStep < 7 && (
-                                <Button variant="primary" onClick={() => setCurrentStep(currentStep + 1)}>
-                                    Next
-                                </Button>
-                            )}
-                        </div>
                     </Modal.Body>
+
                     <Modal.Footer>
-                        {editMode ? (
+                        {mode === "edit" ? (
                             <>
-                                <Button variant="secondary" onClick={() => setShowModal(false)}>
+                                <Button
+                                    variant="secondary"
+                                    onClick={() => setShowModal(false)}
+                                >
                                     Cancel
                                 </Button>
-                                <Button variant="success" onClick={handleSave}>
+
+                                <Button
+                                    variant="success"
+                                    onClick={handleSave}
+                                >
                                     Save
                                 </Button>
                             </>
                         ) : (
-                            <Button variant="secondary" onClick={() => setShowModal(false)}>
+                            <Button
+                                variant="secondary"
+                                onClick={() => setShowModal(false)}
+                            >
                                 Close
                             </Button>
                         )}
+
                     </Modal.Footer>
                 </Modal>
 

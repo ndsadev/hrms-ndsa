@@ -1,10 +1,9 @@
 const multer = require("multer");
+const path = require("path");
 const { CloudinaryStorage } = require("multer-storage-cloudinary");
 const cloudinary = require("../config/cloudinary");
 
-/* -------------------------------
-   Cloudinary Storage
--------------------------------- */
+// Clodinary Storage
 const storage = new CloudinaryStorage({
   cloudinary,
   params: async (req, file) => {
@@ -37,17 +36,28 @@ const storage = new CloudinaryStorage({
         break;
     }
 
+    // DEFINE VARIABLES (IMPORTANT)
+    const isImage = file.mimetype.startsWith("image/");
+    const isPdf = file.mimetype === "application/pdf";
+    const ext = path.extname(file.originalname);
+
     return {
       folder,
-      resource_type: "auto",
-      public_id: `${file.fieldname}_${Date.now()}`,
+
+      // VERY IMPORTANT: use your custom preset
+      upload_preset: "preboarding_docs",
+
+      // Images + PDFs → image (Cloudinary preview works)
+      // Docs/Excel → raw
+      resource_type: isImage || isPdf ? "image" : "raw",
+
+      // keep original extension
+      public_id: `${file.fieldname}_${Date.now()}${ext}`,
     };
   },
 });
 
-/* -------------------------------
-   Allowed File Types
--------------------------------- */
+// Allowed Type
 const allowedMimeTypes = [
   // Images
   "image/jpeg",
@@ -56,24 +66,22 @@ const allowedMimeTypes = [
   "image/webp",
   "image/gif",
 
-  // Docs
+  // Docs / PDFs
   "application/pdf",
   "application/msword",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 
-  // Excel (optional)
+  // Excel
   "application/vnd.ms-excel",
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
 ];
 
-/* -------------------------------
-   File Filter
--------------------------------- */
+// File Filter
 const fileFilter = (req, file, cb) => {
   if (!allowedMimeTypes.includes(file.mimetype)) {
     return cb(
       new Error(
-        "Invalid file type. Allowed: jpg, png, webp, gif, pdf, doc, docx"
+        "Invalid file type. Allowed: jpg, png, webp, gif, pdf, doc, docx, xls, xlsx"
       ),
       false
     );
@@ -81,9 +89,7 @@ const fileFilter = (req, file, cb) => {
   cb(null, true);
 };
 
-/* -------------------------------
-   Multer Instance
--------------------------------- */
+// Muster Instance
 const upload = multer({
   storage,
   fileFilter,
@@ -92,9 +98,7 @@ const upload = multer({
   },
 });
 
-/* -------------------------------
-   Preboarding Fields
--------------------------------- */
+// Preboarding Fileds
 exports.preboardingUpload = upload.fields([
   { name: "profilePic", maxCount: 1 },
   { name: "semesterResults", maxCount: 10 },

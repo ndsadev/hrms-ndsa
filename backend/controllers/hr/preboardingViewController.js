@@ -20,7 +20,7 @@ exports.getPreboardingProfileByEmployeeId = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      data: profile, // 🔥 FULL PROFILE OBJECT
+      data: profile, 
     });
   } catch (error) {
     console.error("❌ Preboarding View Error:", error);

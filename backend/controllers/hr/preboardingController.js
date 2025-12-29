@@ -1,8 +1,8 @@
 const PreboardingProfile = require("../../models/PreboardingProfile");
 
-// ==================================================
+// ================================
 // Helper: File Mapper
-// ==================================================
+// ================================
 const mapSingleFile = (file) => {
   if (!file) return null;
   return {
@@ -11,95 +11,116 @@ const mapSingleFile = (file) => {
   };
 };
 
-// ==================================================
+// ================================
 // Helper: Safe JSON Parse
-// ==================================================
+// ================================
 const safeJsonParse = (value, fallback) => {
   try {
     if (!value) return fallback;
     if (typeof value === "string") return JSON.parse(value);
     return value;
-  } catch (err) {
+  } catch {
     return fallback;
   }
 };
 
-// ==================================================
-// ✅ UPDATE–1: REQUIRED FIELDS COMPLETION CHECK
-// (Experience intentionally OPTIONAL)
-// ==================================================
-const isProfileComplete = (profile) => {
-  const p = profile.personalDetails || {};
-  const bank = profile.bankDetails || {};
-  const emergency = profile.emergencyContact || {};
+// ================================
+// 🔥 FINAL PROFILE COMPLETION CHECK
+// RULE: koi bhi field empty → IN_PROGRESS
+// ================================
+const isProfileComplete = (profileDoc) => {
+  const profile = profileDoc.toObject({
+    depopulate: true,
+    versionKey: false,
+  });
 
-  // STEP 1 – Personal
-  if (!p.firstName || !p.lastName || !p.dob || !p.email || !p.phone) {
+  // 🔕 fields / sections to IGNORE from validation
+  const IGNORE_KEYS = [
+    "_id",
+    "createdBy",
+    "createdAt",
+    "updatedAt",
+    "status",
+    "userId",
+    "__v",
+
+    // 🔥 OPTIONAL SECTIONS
+    "certifications",
+    "experiences",
+  ];
+
+  const hasEmpty = (value, path = "") => {
+    if (value === null || value === undefined) return true;
+
+    if (typeof value === "string") {
+      return value.trim() === "";
+    }
+
+    if (Array.isArray(value)) {
+      // ✅ empty array allowed ONLY for optional sections
+      if (value.length === 0) return false;
+      return value.some((v) => hasEmpty(v, path));
+    }
+
+    if (typeof value === "object") {
+      return Object.entries(value).some(([key, val]) => {
+        if (IGNORE_KEYS.includes(key)) return false;
+        return hasEmpty(val, key);
+      });
+    }
+
     return false;
-  }
+  };
 
-  // STEP 2 – Education
-  if (!profile.education?.length || !profile.education[0]?.qualification) {
-    return false;
-  }
-
-  // STEP 3 – Certification
-  if (!profile.certifications?.length || !profile.certifications[0]?.name) {
-    return false;
-  }
-
-  // STEP 5 – Bank
-  if (!bank.accountHolder || !bank.bankName || !bank.accountNo || !bank.ifsc) {
-    return false;
-  }
-
-  // STEP 6 – Emergency ✅ FIXED
-  if (!emergency.emergencyName || !emergency.emergencyPhone) {
-    return false;
-  }
-
-  // STEP 4 – Experience OPTIONAL
-  return true;
+  return !hasEmpty(profile);
 };
 
-// ==================================================
+// ================================
 // CREATE / UPDATE PREBOARDING PROFILE
-// ==================================================
+// ================================
 exports.savePreboardingProfile = async (req, res) => {
   try {
-    console.log("========== PREBOARDING DEBUG START ==========");
-    console.log("BODY KEYS:", Object.keys(req.body));
-    console.log("FILES OBJECT:", req.files);
-    console.log("===========================================");
-
     const userId = req.user._id;
 
+    // ================================
+    // FILES MAP
+    // ================================
+    const filesMap = {};
+    (req.files || []).forEach((file) => {
+      if (!filesMap[file.fieldname]) {
+        filesMap[file.fieldname] = [];
+      }
+      filesMap[file.fieldname].push(file);
+    });
+
+    // ================================
     // SAFE PARSING
+    // ================================
     const education = safeJsonParse(req.body.education, []);
     const certifications = safeJsonParse(req.body.certifications, []);
     const experiences = safeJsonParse(req.body.experiences, []);
     const bankDetails = safeJsonParse(req.body.bankDetails, null);
     const emergencyContact = safeJsonParse(req.body.emergencyContact, null);
 
-    // Find or create profile
+    // ================================
+    // FIND OR CREATE PROFILE
+    // ================================
     let profile = await PreboardingProfile.findOne({
       employeeId: req.body.employeeId,
     });
 
-
     if (!profile) {
       profile = new PreboardingProfile({
-        userId,                 // HR
-        employeeId: req.body.employeeId, // EMPLOYEE (unique)
+        userId,
+        employeeId: req.body.employeeId,
         createdBy: userId,
         status: "IN_PROGRESS",
       });
     }
 
-
-    /* =========================
-       STEP 1: PERSONAL DETAILS
-    ========================== */
+    // ================================
+    // STEP 1: PERSONAL DETAILS
+    // ================================
     profile.personalDetails = {
       firstName: req.body.firstName,
       middleName: req.body.middleName,
@@ -109,43 +130,48 @@ exports.savePreboardingProfile = async (req, res) => {
       phone: req.body.phone,
       bloodGroup: req.body.bloodGroup,
       address: req.body.address,
-      profilePic: req.files?.profilePic
-        ? mapSingleFile(req.files.profilePic[0])
+      profilePic: filesMap.profilePic
+        ? mapSingleFile(filesMap.profilePic[0])
         : profile.personalDetails?.profilePic,
     };
 
-    /* =========================
-       STEP 2: EDUCATION
-    ========================== */
-    profile.education = education.map((edu) => ({
+    // ================================
+    // STEP 2: EDUCATION (RETAIN OLD FILES)
+    // ================================
+    profile.education = education.map((edu, index) => ({
       qualification: edu.qualification,
       university: edu.university,
       passingYear: edu.passingYear,
-      semesterResults: [],
+      semesterResults: profile.education?.[index]?.semesterResults || [],
     }));
 
-    if (req.files?.semesterResults?.length && profile.education.length) {
-      req.files.semesterResults.forEach((file, i) => {
-        profile.education[0].semesterResults.push({
-          semester: i + 1,
-          file: mapSingleFile(file),
-        });
-      });
-    }
+    Object.keys(filesMap).forEach((key) => {
+      if (key.startsWith("semesterResults_")) {
+        const eduIndex = Number(key.split("_")[1]);
+        if (profile.education[eduIndex]) {
+          filesMap[key].forEach((file, i) => {
+            profile.education[eduIndex].semesterResults.push({
+              semester: i + 1,
+              file: mapSingleFile(file),
+            });
+          });
+        }
+      }
+    });
 
-    /* =========================
-       STEP 3: CERTIFICATIONS
-    ========================== */
+    // ================================
+    // STEP 3: CERTIFICATIONS (RETAIN OLD)
+    // ================================
     profile.certifications = certifications.map((cert, index) => ({
       name: cert.name,
-      file: req.files?.certificationFile?.[index]
-        ? mapSingleFile(req.files.certificationFile[index])
-        : null,
+      file: filesMap.certificationFile?.[index]
+        ? mapSingleFile(filesMap.certificationFile[index])
+        : profile.certifications?.[index]?.file || null,
     }));
 
-    /* =========================
-       STEP 4: EXPERIENCE (OPTIONAL)
-    ========================== */
+    // ================================
+    // STEP 4: EXPERIENCE (RETAIN OLD)
+    // ================================
     profile.experiences = experiences.map((exp, index) => ({
       company: exp.company,
       designation: exp.designation,
@@ -154,58 +180,56 @@ exports.savePreboardingProfile = async (req, res) => {
       startDate: exp.startDate,
       endDate: exp.endDate,
 
-      offerLetter: req.files?.offerLetter?.[index]
-        ? mapSingleFile(req.files.offerLetter[index])
-        : null,
+      offerLetter: filesMap.offerLetter?.[index]
+        ? mapSingleFile(filesMap.offerLetter[index])
+        : profile.experiences?.[index]?.offerLetter || null,
 
-      experienceLetter: req.files?.experienceLetter?.[index]
-        ? mapSingleFile(req.files.experienceLetter[index])
-        : null,
+      experienceLetter: filesMap.experienceLetter?.[index]
+        ? mapSingleFile(filesMap.experienceLetter[index])
+        : profile.experiences?.[index]?.experienceLetter || null,
 
-      appointmentLetter: req.files?.appointmentLetter?.[index]
-        ? mapSingleFile(req.files.appointmentLetter[index])
-        : null,
+      appointmentLetter: filesMap.appointmentLetter?.[index]
+        ? mapSingleFile(filesMap.appointmentLetter[index])
+        : profile.experiences?.[index]?.appointmentLetter || null,
 
-      salarySlip: req.files?.salarySlip?.[index]
-        ? mapSingleFile(req.files.salarySlip[index])
-        : null,
+      salarySlip: filesMap.salarySlip?.[index]
+        ? mapSingleFile(filesMap.salarySlip[index])
+        : profile.experiences?.[index]?.salarySlip || null,
     }));
 
-    /* =========================
-       STEP 5: BANK DETAILS
-    ========================== */
+    // ================================
+    // STEP 5: BANK DETAILS
+    // ================================
     if (bankDetails) {
       profile.bankDetails = {
         ...bankDetails,
-        aadharFile: req.files?.aadharFile
-          ? mapSingleFile(req.files.aadharFile[0])
+        aadharFile: filesMap.aadharFile
+          ? mapSingleFile(filesMap.aadharFile[0])
           : profile.bankDetails?.aadharFile,
 
-        panFile: req.files?.panFile
-          ? mapSingleFile(req.files.panFile[0])
+        panFile: filesMap.panFile
+          ? mapSingleFile(filesMap.panFile[0])
           : profile.bankDetails?.panFile,
 
-        cancelCheque: req.files?.cancelCheque
-          ? mapSingleFile(req.files.cancelCheque[0])
+        cancelCheque: filesMap.cancelCheque
+          ? mapSingleFile(filesMap.cancelCheque[0])
           : profile.bankDetails?.cancelCheque,
       };
     }
 
-    /* =========================
-       STEP 6: EMERGENCY CONTACT
-    ========================== */
+    // ================================
+    // STEP 6: EMERGENCY CONTACT
+    // ================================
     if (emergencyContact) {
       profile.emergencyContact = emergencyContact;
     }
 
-    /* =========================
-       ✅ UPDATE–2: STATUS AUTO LOGIC
-    ========================== */
-    if (req.body.submit === "true") {
-      profile.status = isProfileComplete(profile)
-        ? "SUBMITTED"
-        : "IN_PROGRESS";
-    }
+    // ================================
+    // 🔥 STATUS AUTO UPDATE (FINAL)
+    // ================================
+    profile.status = isProfileComplete(profile)
+      ? "SUBMITTED"
+      : "IN_PROGRESS";
 
     await profile.save();
 
@@ -215,17 +239,17 @@ exports.savePreboardingProfile = async (req, res) => {
       data: profile,
     });
   } catch (error) {
-    console.error("❌ Preboarding Error FULL:", error);
+    console.error("❌ Preboarding Error:", error);
     return res.status(500).json({
       success: false,
-      message: error.message || "Server error while saving preboarding profile",
+      message: error.message || "Server error",
     });
   }
 };
 
-// ==================================================
-// GET PREBOARDING PROFILE (LOGGED-IN USER)
-// ==================================================
+// ================================
+// GET PREBOARDING PROFILE
+// ================================
 exports.getPreboardingProfile = async (req, res) => {
   try {
     const profile = await PreboardingProfile.findOne({
@@ -243,7 +267,7 @@ exports.getPreboardingProfile = async (req, res) => {
       success: true,
       data: profile,
     });
-  } catch (error) {
+  } catch {
     res.status(500).json({
       success: false,
       message: "Failed to fetch preboarding profile",

@@ -3,11 +3,12 @@ import { Table, Button, Modal, Container, Form } from "react-bootstrap";
 import { HiOutlineDocumentArrowUp } from "react-icons/hi2";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import ProfileForm from "../components/PreboardingStageForm";
-import { FaEye, FaEdit, FaTrash } from "react-icons/fa";
+import PreboardingStageForm from "../components/PreboardingStageForm";
 import EmployeeProfileView from "../components/EmployeeProfileView";
-import useOnboarding from "../hooks/useOnboarding";
-
+import useOnboarding from "../hooks/onboarding/useOnboarding";
+import api from "../api/axiosInstance";
+import SummaryApi from "../common";
+import OnboardingTable from "../components/OnboardingTable";
 
 const Onboarding = () => {
     const initialFormData = {
@@ -18,7 +19,7 @@ const Onboarding = () => {
         phone: "",
         address: "",
         profilePicture: null,
-        education: [{ qualification: "", university: "", passingYear: "", semesterFiles: [] }],
+        education: [{ qualification: "", university: "", passingYear: "", semesterResults: [] }],
         certifications: [{ name: "", file: null }],
         experiences: [
             {
@@ -91,6 +92,7 @@ const Onboarding = () => {
         selectedEmployee,
         loading,
         mode,
+        listLoading,
     } = useOnboarding();
 
 
@@ -108,26 +110,121 @@ const Onboarding = () => {
         }
     };
 
+    const handleEducationFileUpload = (eduIndex, files) => {
+        const updatedEducation = [...formData.education];
+
+        updatedEducation[eduIndex] = {
+            ...updatedEducation[eduIndex],
+            semesterResults: Array.from(files)
+        };
+
+        setFormData({
+            ...formData,
+            education: updatedEducation,
+        });
+    };
+
+
     const handleNestedChange = (field, value) => {
         setFormData({ ...formData, [field]: value });
     };
 
-    const handleSave = () => {
-        if (selectedEmployee) {
-            const updated = employees.map((emp) =>
-                emp.id === selectedEmployee.id
-                    ? { ...emp, data: formData, name: formData.fullName, email: formData.email }
-                    : emp
+    const handleSave = async () => {
+        try {
+            const fd = new FormData();
+
+            // BASIC
+            fd.append("employeeId", formData.employeeId);
+            fd.append("firstName", formData.firstName);
+            fd.append("middleName", formData.middleName || "");
+            fd.append("lastName", formData.lastName);
+            fd.append("dob", formData.dob);
+            fd.append("email", formData.email);
+            fd.append("phone", formData.phone);
+            fd.append("bloodGroup", formData.bloodGroup);
+            fd.append("address", formData.address);
+
+            // JSON
+            fd.append("education", JSON.stringify(formData.education));
+            fd.append("certifications", JSON.stringify(formData.certifications));
+            fd.append("experiences", JSON.stringify(formData.experiences));
+
+            fd.append(
+                "bankDetails",
+                JSON.stringify({
+                    accountHolder: formData.accountHolder,
+                    bankName: formData.bankName,
+                    branch: formData.branch,
+                    bankEmail: formData.bankEmail,
+                    bankPhone: formData.bankPhone,
+                    accountNo: formData.accountNo,
+                    ifsc: formData.ifsc,
+                    registerNo: formData.registerNo,
+                    aadharNo: formData.aadharNo,
+                    panNo: formData.panNo,
+                })
             );
-            setEmployees(updated);
-            toast.success("✅ Employee updated!");
-        } else {
-            const newEmp = { id: Date.now(), name: formData.fullName, email: formData.email, data: formData };
-            setEmployees([...employees, newEmp]);
-            toast.success("✅ Employee added!");
+
+            fd.append(
+                "emergencyContact",
+                JSON.stringify({
+                    name: formData.emergencyName,
+                    relation: formData.relation,
+                    phone: formData.emergencyPhone,
+                    alternatePhone: formData.emergencyAlternatePhone,
+                    address: formData.emergencyAddress,
+                })
+            );
+
+            fd.append("submit", "true");
+
+            // FILES (optional)
+            if (formData.profilePic) fd.append("profilePic", formData.profilePic);
+
+            formData.education.forEach((edu, i) => {
+                edu.semesterResults?.forEach((file) => {
+                    if (file instanceof File) {
+                        fd.append(`semesterResults_${i}`, file);
+                    }
+                });
+            });
+
+            formData.certifications.forEach((c) => {
+                if (c.file instanceof File) {
+                    fd.append("certificationFile", c.file);
+                }
+            });
+
+            formData.experiences.forEach((e) => {
+                if (e.offerLetter instanceof File) fd.append("offerLetter", e.offerLetter);
+                if (e.experienceLetter instanceof File)
+                    fd.append("experienceLetter", e.experienceLetter);
+                if (e.appointmentLetter instanceof File)
+                    fd.append("appointmentLetter", e.appointmentLetter);
+                if (e.salarySlip instanceof File) fd.append("salarySlip", e.salarySlip);
+            });
+
+            if (formData.aadharFile instanceof File)
+                fd.append("aadharFile", formData.aadharFile);
+            if (formData.panFile instanceof File)
+                fd.append("panFile", formData.panFile);
+            if (formData.cancelCheque instanceof File)
+                fd.append("cancelCheque", formData.cancelCheque);
+
+            const res = await api.post(
+                SummaryApi.savePreboardingProfile.url,
+                fd
+            );
+
+            toast.success("Profile updated successfully");
+            setShowModal(false);
+            fetchEmployees();
+        } catch (err) {
+            console.error(err);
+            toast.error("❌ Update error");
         }
-        setShowModal(false);
     };
+
 
     const handleUploadChange = (e) => {
         const { name, files, value } = e.target;
@@ -148,6 +245,137 @@ const Onboarding = () => {
         setShowUploadModal(false);
         toast.success("📄 Documents uploaded successfully!");
     };
+
+    const handleEducationChange = (index, e) => {
+        const updated = [...formData.education];
+        updated[index][e.target.name] = e.target.value;
+        setFormData({ ...formData, education: updated });
+    };
+
+    const addEducation = () => {
+        setFormData({
+            ...formData,
+            education: [
+                ...formData.education,
+                { qualification: "", university: "", passingYear: "", semesterResults: [] },
+            ],
+        });
+    };
+
+    const removeEducation = (index) => {
+        setFormData({
+            ...formData,
+            education: formData.education.filter((_, i) => i !== index),
+        });
+    };
+
+    const handleCertificationChange = (index, e) => {
+        const updated = [...formData.certifications];
+        updated[index][e.target.name] = e.target.value;
+        setFormData({ ...formData, certifications: updated });
+    };
+
+    const handleCertificationUpload = (index, file) => {
+        const updated = [...formData.certifications];
+        updated[index].file = file;
+        setFormData({ ...formData, certifications: updated });
+    };
+
+    const addCertification = () => {
+        setFormData({
+            ...formData,
+            certifications: [...formData.certifications, { name: "", file: null }],
+        });
+    };
+
+    const removeCertification = (index) => {
+        setFormData({
+            ...formData,
+            certifications: formData.certifications.filter((_, i) => i !== index),
+        });
+    };
+
+    const handleExperienceChange = (index, e) => {
+        const updated = [...formData.experiences];
+        updated[index][e.target.name] = e.target.value;
+        setFormData({ ...formData, experiences: updated });
+    };
+
+    const handleExperienceFileUpload = (index, field, file) => {
+        const updated = [...formData.experiences];
+        updated[index][field] = file;
+        setFormData({ ...formData, experiences: updated });
+    };
+
+    const addExperience = () => {
+        setFormData({
+            ...formData,
+            experiences: [
+                ...formData.experiences,
+                {
+                    company: "",
+                    designation: "",
+                    startDesignation: "",
+                    endDesignation: "",
+                    startDate: "",
+                    endDate: "",
+                    offerLetter: null,
+                    appointmentLetter: null,
+                    experienceLetter: null,
+                    salarySlip: null,
+                },
+            ],
+        });
+    };
+
+    const removeExperience = (index) => {
+        setFormData({
+            ...formData,
+            experiences: formData.experiences.filter((_, i) => i !== index),
+        });
+    };
+
+    useEffect(() => {
+        if (mode === "edit" && selectedEmployee) {
+            setFormData({
+                employeeId: selectedEmployee.employeeId,
+
+                // PERSONAL
+                firstName: selectedEmployee.personalDetails?.firstName || "",
+                middleName: selectedEmployee.personalDetails?.middleName || "",
+                lastName: selectedEmployee.personalDetails?.lastName || "",
+                dob: selectedEmployee.personalDetails?.dob?.slice(0, 10) || "",
+                email: selectedEmployee.personalDetails?.email || "",
+                phone: selectedEmployee.personalDetails?.phone || "",
+                bloodGroup: selectedEmployee.personalDetails?.bloodGroup || "",
+                address: selectedEmployee.personalDetails?.address || "",
+                profilePic: selectedEmployee.personalDetails?.profilePic || null,
+
+                // EDUCATION
+                education: selectedEmployee.education || [],
+
+                // CERTIFICATION
+                certifications: selectedEmployee.certifications || [],
+
+                // EXPERIENCE
+                experiences: selectedEmployee.experiences || [],
+
+                // BANK
+                ...selectedEmployee.bankDetails,
+
+                // EMERGENCY
+                emergencyName: selectedEmployee.emergencyContact?.name || "",
+                relation: selectedEmployee.emergencyContact?.relation || "",
+                emergencyPhone: selectedEmployee.emergencyContact?.phone || "",
+                emergencyAlternatePhone:
+                    selectedEmployee.emergencyContact?.alternatePhone || "",
+                emergencyAddress: selectedEmployee.emergencyContact?.address || "",
+            });
+
+            setCurrentStep(1); // 👈 IMPORTANT (next/prev fix)
+        }
+    }, [mode, selectedEmployee]);
+
 
     return (
         <>
@@ -231,7 +459,6 @@ const Onboarding = () => {
   }
 `}</style>
 
-
             <Container>
                 <div className="d-flex justify-content-between align-items-center page-header flex-wrap gap-2">
                     <h5 className="mb-0 d-flex align-items-center text-white page-title">
@@ -239,150 +466,17 @@ const Onboarding = () => {
                     </h5>
                 </div>
 
-                <div style={{ borderRadius: "12px", border: "1px solid #ddd", overflowX: "auto" }}>
-                    <div className="users-card">
-                        <table className="users-table">
-                            <thead>
-                                <tr>
-                                    <th>Employee ID</th>
-                                    <th>Name</th>
-                                    <th>Email</th>
-                                    <th>Upload Documents</th>
-                                    <th>Status</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-
-                            <tbody>
-                                {employees.length > 0 ? (
-                                    employees.map((emp) => (
-                                        <tr key={emp._id}>
-                                            <td>{emp.employeeId}</td>
-                                            <td>{emp.name || "—"}</td>
-                                            <td>{emp.email || "—"}</td>
-
-                                            {/* Upload Documents */}
-                                            <td>
-                                                <HiOutlineDocumentArrowUp
-                                                    size={22}
-                                                    className="doc-icon"
-                                                    title="Upload Documents"
-                                                    onClick={() => {
-                                                        setSelectedEmployee(emp);
-                                                        setUploadData(
-                                                            emp.uploadDocuments || initialFormData.uploadDocuments
-                                                        );
-                                                        setShowUploadModal(true);
-                                                    }}
-                                                />
-                                            </td>
-
-                                            {/* Status */}
-                                            <td>
-                                                <span
-                                                    className={`badge ${emp.status === "SUBMITTED"
-                                                        ? "bg-warning"
-                                                        : emp.status === "VERIFIED"
-                                                            ? "bg-success"
-                                                            : "bg-secondary"
-                                                        }`}
-                                                >
-                                                    {emp.status}
-                                                </span>
-                                            </td>
-
-                                            {/* Actions */}
-                                            <td>
-                                                <div className="action-group">
-                                                    {/* View */}
-                                                    <button
-                                                        className="action-btn view-btn"
-                                                        title="View Profile"
-                                                        onClick={() =>
-                                                            viewEmployee(emp, (msg) => toast.error(msg))
-                                                        }
-                                                    >
-                                                        <FaEye size={14} />
-                                                    </button>
-
-                                                    {/* Edit */}
-                                                    <button
-                                                        className="action-btn edit-btn"
-                                                        title="Edit Profile"
-                                                        onClick={() =>
-                                                            editEmployee(emp, (msg) => toast.error(msg))
-                                                        }
-
-                                                    >
-                                                        <FaEdit size={14} />
-                                                    </button>
-
-                                                    {/* Delete */}
-                                                    <button
-                                                        className="action-btn delete-btn"
-                                                        title="Delete Profile"
-                                                        onClick={() =>
-                                                            toast(
-                                                                ({ closeToast }) => (
-                                                                    <div>
-                                                                        <p className="mb-2">
-                                                                            ⚠️ Are you sure you want to delete this employee?
-                                                                        </p>
-
-                                                                        <div className="d-flex justify-content-end gap-2">
-                                                                            <button
-                                                                                className="btn btn-sm btn-secondary"
-                                                                                onClick={closeToast}
-                                                                            >
-                                                                                Cancel
-                                                                            </button>
-
-                                                                            <button
-                                                                                className="btn btn-sm btn-danger"
-                                                                                onClick={() => {
-                                                                                    closeToast();
-                                                                                    deleteEmployee(
-                                                                                        emp,
-                                                                                        (msg) => toast.success(msg),
-                                                                                        (msg) => toast.error(msg)
-                                                                                    );
-                                                                                }}
-                                                                            >
-                                                                                Yes, Delete
-                                                                            </button>
-                                                                        </div>
-                                                                    </div>
-                                                                ),
-                                                                {
-                                                                    autoClose: false,
-                                                                    closeButton: false,
-                                                                    closeOnClick: false,
-                                                                }
-                                                            )
-                                                        }
-
-                                                    >
-                                                        <FaTrash size={14} />
-                                                    </button>
-
-                                                </div>
-                                            </td>
-
-                                        </tr>
-                                    ))
-                                ) : (
-                                    <tr>
-                                        <td colSpan="6" style={{ padding: 20 }}>
-                                            No Employees Found
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-
-
-                </div>
+                <OnboardingTable
+                    employees={employees}
+                    listLoading={listLoading}
+                    onView={viewEmployee}
+                    onEdit={editEmployee}
+                    onDelete={deleteEmployee}
+                    onUploadClick={(emp) => {
+                        setUploadData(emp.uploadDocuments || initialFormData.uploadDocuments);
+                        setShowUploadModal(true);
+                    }}
+                />
 
                 {/* View/Edit Modal */}
                 <Modal show={showModal} onHide={() => setShowModal(false)} size="xl">
@@ -398,40 +492,57 @@ const Onboarding = () => {
                         ) : mode === "view" ? (
                             <EmployeeProfileView data={selectedEmployee} />
                         ) : (
-                            <ProfileForm
+                            <PreboardingStageForm
                                 step={currentStep}
-                                formData={selectedEmployee}
-                                editMode={true}
+                                formData={formData}
+                                errors={{}}
+                                handleChange={handleChange}
+                                handleFileChange={handleChange}
+                                handleEducationChange={handleEducationChange}
+                                handleSemesterUpload={handleEducationFileUpload}
+                                addEducation={addEducation}
+                                removeEducation={removeEducation}
+                                handleCertificationChange={handleCertificationChange}
+                                handleCertificationUpload={handleCertificationUpload}
+                                addCertification={addCertification}
+                                removeCertification={removeCertification}
+                                handleExperienceChange={handleExperienceChange}
+                                handleExperienceFileUpload={handleExperienceFileUpload}
+                                addExperience={addExperience}
+                                removeExperience={removeExperience}
+                                editMode={mode === "edit"}
                             />
                         )}
                     </Modal.Body>
 
-                    <Modal.Footer>
-                        {mode === "edit" ? (
+                    <Modal.Footer className="justify-content-between">
+                        {mode === "edit" && (
                             <>
-                                <Button
-                                    variant="secondary"
-                                    onClick={() => setShowModal(false)}
-                                >
-                                    Cancel
-                                </Button>
+                                {currentStep > 1 && (
+                                    <Button variant="secondary" onClick={() => setCurrentStep(p => p - 1)}>
+                                        Previous
+                                    </Button>
+                                )}
 
-                                <Button
-                                    variant="success"
-                                    onClick={handleSave}
-                                >
-                                    Save
-                                </Button>
+                                {currentStep < 6 && (
+                                    <Button variant="primary" onClick={() => setCurrentStep(p => p + 1)}>
+                                        Next
+                                    </Button>
+                                )}
+
+                                {currentStep === 6 && (
+                                    <Button variant="success" onClick={handleSave}>
+                                        Update
+                                    </Button>
+                                )}
                             </>
-                        ) : (
-                            <Button
-                                variant="secondary"
-                                onClick={() => setShowModal(false)}
-                            >
+                        )}
+
+                        {mode === "view" && (
+                            <Button variant="secondary" onClick={() => setShowModal(false)}>
                                 Close
                             </Button>
                         )}
-
                     </Modal.Footer>
                 </Modal>
 
@@ -479,9 +590,7 @@ const Onboarding = () => {
 
                 <ToastContainer position="top-right" autoClose={2500} />
             </Container>
-
         </>
-
     );
 };
 

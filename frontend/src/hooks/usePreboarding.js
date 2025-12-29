@@ -84,7 +84,10 @@ const usePreboarding = () => {
       );
 
       // ✅ IMPORTANT: submit flag
-      payload.append("submit", "true");
+    if (formData.__finalSubmit) {
+  payload.append("submit", "true");
+}
+
 
       // =========================
       // FILES
@@ -95,12 +98,15 @@ const usePreboarding = () => {
         payload.append("profilePic", formData.profilePic);
       }
 
-      // Semester Results (PDFs)
-      formData.education?.forEach((edu) => {
-        edu.semesterResults?.forEach((file) => {
-          payload.append("semesterResults", file);
-        });
+      // Semester Results (PDFs) — INDEX BASED (FIX)
+      formData.education?.forEach((edu, index) => {
+        if (edu.semesterResults?.length) {
+          edu.semesterResults.forEach((file) => {
+            payload.append(`semesterResults_${index}`, file);
+          });
+        }
       });
+
 
       // Certification Files
       formData.certifications?.forEach((cert) => {

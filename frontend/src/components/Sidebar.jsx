@@ -11,6 +11,7 @@ import {
   FaLaptop,
   FaListAlt,
   FaSignOutAlt,
+  FaList,
 } from "react-icons/fa";
 import { NavLink } from "react-router-dom";
 import { useSelector } from "react-redux";
@@ -26,7 +27,7 @@ const roleMenus = {
   ],
 
   HR: [
-    { label: "Employee List", path: "employee-list", icon: <FaClipboardCheck size={18} /> },
+    { label: "Employee List", path: "employee-list", icon: <FaList size={18} /> },
     { label: "Preboarding Stage", path: "preboarding-stage", icon: <FaClipboardCheck size={18} /> },
     { label: "Onboarding", path: "onboarding", icon: <FaUserCheck size={18} /> },
     { label: "Active Employment", path: "active-employment", icon: <FaBriefcase size={18} /> },

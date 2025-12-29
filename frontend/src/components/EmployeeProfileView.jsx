@@ -6,34 +6,34 @@ const PRIMARY = "#06406E";
 const SECONDARY = "#9BC092";
 
 const FileLink = ({ file }) => {
-  if (!file?.url) return <span className="text-muted">—</span>;
+    if (!file?.url) return <span className="text-muted">—</span>;
 
-  return (
-    <div
-      style={{
-        border: "1px solid #ced4da",
-        borderRadius: "6px",
-        padding: "8px 12px",
-        background: "#f8f9fa",
-        minHeight: "38px",
-        display: "flex",
-        alignItems: "center",
-      }}
-    >
-      <a
-        href={file.url}   // DIRECT URL ONLY
-        target="_blank"
-        rel="noopener noreferrer"
-        style={{
-          color: "#06406E",
-          fontWeight: 600,
-          textDecoration: "underline",
-        }}
-      >
-        View
-      </a>
-    </div>
-  );
+    return (
+        <div
+            style={{
+                border: "1px solid #ced4da",
+                borderRadius: "6px",
+                padding: "8px 12px",
+                background: "#f8f9fa",
+                minHeight: "38px",
+                display: "flex",
+                alignItems: "center",
+            }}
+        >
+            <a
+                href={file.url}   // DIRECT URL ONLY
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                    color: "#06406E",
+                    fontWeight: 600,
+                    textDecoration: "underline",
+                }}
+            >
+                View
+            </a>
+        </div>
+    );
 };
 
 const EmployeeProfileView = ({ data }) => {
@@ -76,7 +76,7 @@ const EmployeeProfileView = ({ data }) => {
     return (
         <Form className="p-4 border rounded">
 
-           {/* Header */}
+            {/* Header */}
             <div
                 style={{
                     background: `linear-gradient(90deg, ${PRIMARY}, #043154)`,
@@ -217,18 +217,16 @@ const EmployeeProfileView = ({ data }) => {
                         </Row>
 
                         <Form.Label style={labelStyle}>Semester Results</Form.Label>
-                        <Form.Control
-                            as="textarea"
-                            rows={2}
-                            value={
-                                edu.semesterResults?.length
-                                    ? edu.semesterResults
-                                        .map((_, idx) => `Semester ${idx + 1}`)
-                                        .join(", ")
-                                    : "—"
-                            }
-                            readOnly
-                        />
+                        {edu.semesterResults?.length ? (
+                            edu.semesterResults.map((s, idx) => (
+                                <div key={idx} className="mb-1">
+                                    <strong>Semester {s.semester}:</strong>{" "}
+                                    <FileLink file={s.file} />
+                                </div>
+                            ))
+                        ) : (
+                            <Form.Control value="—" readOnly />
+                        )}
                     </div>
                 ))
             ) : (

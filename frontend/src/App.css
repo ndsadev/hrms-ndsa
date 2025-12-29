@@ -27,3 +27,13 @@
 .blue-color{
     color: #06406e;
 }
+
+.profile-pic-group {
+  margin-bottom: 8px !important;
+}
+
+.profile-pic-label {
+  margin-bottom: 2px !important;
+  line-height: 1.1 !important;
+  font-weight: 500;
+}

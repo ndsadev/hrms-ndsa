@@ -1,6 +1,68 @@
 import React from "react";
 import { Form, Row, Col, Card, Button } from "react-bootstrap";
 
+const toDateInputValue = (date) => {
+    if (!date) return "";
+    return new Date(date).toISOString().split("T")[0];
+};
+
+
+const ViewFile = ({ file, label, isImage = false }) => {
+    if (!file) return null;
+
+    // 🔹 Existing uploaded file (Cloudinary)
+    if (file.url) {
+        return (
+            <div className="mt-2">
+                {isImage ? (
+                    <img
+                        src={file.url}
+                        alt={label}
+                        style={{
+                            width: 120,
+                            height: 120,
+                            objectFit: "cover",
+                            borderRadius: 8,
+                            border: "1px solid #ddd",
+                        }}
+                    />
+                ) : (
+                    <a href={file.url} target="_blank" rel="noreferrer">
+                        View {label}
+                    </a>
+                )}
+            </div>
+        );
+    }
+
+    // 🔹 Newly selected file (before submit)
+    if (file instanceof File) {
+        const previewUrl = URL.createObjectURL(file);
+
+        return (
+            <div className="mt-2">
+                {isImage ? (
+                    <img
+                        src={previewUrl}
+                        alt={label}
+                        style={{
+                            width: 120,
+                            height: 120,
+                            objectFit: "cover",
+                            borderRadius: 8,
+                            border: "1px solid #ddd",
+                        }}
+                    />
+                ) : (
+                    <span className="text-muted">{file.name}</span>
+                )}
+            </div>
+        );
+    }
+
+    return null;
+};
+
 const PreboardingStageForm = ({
     step,
     formData,
@@ -18,6 +80,7 @@ const PreboardingStageForm = ({
     handleExperienceFileUpload,
     addExperience,
     removeExperience,
+    editMode,
 }) => {
     return (
         <>
@@ -77,15 +140,38 @@ const PreboardingStageForm = ({
                         </Col>
                     </Row>
 
+
                     <Form.Group className="mb-3">
-                        <Form.Label>Profile Picture</Form.Label>
-                        <Form.Control
-                            type="file"
-                            name="profilePic"
-                            onChange={handleFileChange}
-                        />
+                        <Form.Label className="mb-0">
+                            Profile Picture
+                        </Form.Label>
+
+                        <div className="d-flex align-items-center gap-3">
+                            <Form.Control
+                                type="file"
+                                name="profilePic"
+                                onChange={handleFileChange}
+                                style={{ width: "340px" }}   // 👈 input chota
+                            />
+
+                            {formData.profilePic?.url && (
+                                <img
+                                    src={formData.profilePic.url}
+                                    alt="Profile"
+                                    style={{
+                                        width: 70,
+                                        height: 70,
+                                        objectFit: "cover",
+                                        borderRadius: 8,
+                                        border: "1px solid #ddd",
+                                    }}
+                                />
+                            )}
+                        </div>
 
                     </Form.Group>
+
+
 
                     {/* UPDATED HERE (Full Name removed) */}
                     <Row>
@@ -250,11 +336,33 @@ const PreboardingStageForm = ({
                                 <Form.Control
                                     type="file"
                                     multiple
+                                    name={`semesterResults_${index}`}
                                     onChange={(e) =>
                                         handleSemesterUpload(index, e.target.files)
                                     }
                                 />
+
+                                {/* 👇 EXISTING DOCUMENTS (EDIT MODE) */}
+                                {edu.semesterResults?.length > 0 && (
+                                    <div className="mt-2">
+                                        <small className="text-muted">Uploaded Documents:</small>
+                                        <ul className="mb-0">
+                                            {edu.semesterResults.map((sr, i) => (
+                                                <li key={i}>
+                                                    <a
+                                                        href={sr.file?.url}
+                                                        target="_blank"
+                                                        rel="noreferrer"
+                                                    >
+                                                        Semester {sr.semester} – View
+                                                    </a>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
                             </Form.Group>
+
                         </Card>
                     ))}
                     <Button
@@ -295,7 +403,21 @@ const PreboardingStageForm = ({
                                                 handleCertificationUpload(index, e.target.files[0])
                                             }
                                         />
+
+                                        {/* 👇 EXISTING CERTIFICATE */}
+                                        {cert.file?.url && (
+                                            <div className="mt-2">
+                                                <a
+                                                    href={cert.file.url}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                >
+                                                    View Uploaded Certificate
+                                                </a>
+                                            </div>
+                                        )}
                                     </Form.Group>
+
                                 </Col>
                                 <Col md={2} className="d-flex align-items-center">
                                     {formData.certifications.length > 1 && (
@@ -394,31 +516,55 @@ const PreboardingStageForm = ({
                             </Row>
 
                             <Row>
+                                {/* START DATE */}
                                 <Col md={6}>
                                     <Form.Group className="mb-3">
                                         <Form.Label>Start Date</Form.Label>
-                                        <Form.Control
-                                            type="date"
-                                            name="startDate"
-                                            value={exp.startDate}
-                                            onChange={(e) => handleExperienceChange(index, e)}
-                                        />
+
+                                        {editMode ? (
+                                            <Form.Control
+                                                type="date"
+                                                name="startDate"
+                                                value={toDateInputValue(exp.startDate)}
+                                                onChange={(e) => handleExperienceChange(index, e)}
+                                            />
+                                        ) : (
+                                            <div className="form-control bg-light">
+                                                {exp.startDate
+                                                    ? new Date(exp.startDate).toLocaleDateString()
+                                                    : "—"}
+                                            </div>
+                                        )}
                                     </Form.Group>
                                 </Col>
+
+                                {/* END DATE */}
                                 <Col md={6}>
                                     <Form.Group className="mb-3">
                                         <Form.Label>End Date</Form.Label>
-                                        <Form.Control
-                                            type="date"
-                                            name="endDate"
-                                            value={exp.endDate}
-                                            onChange={(e) => handleExperienceChange(index, e)}
-                                        />
+
+                                        {editMode ? (
+                                            <Form.Control
+                                                type="date"
+                                                name="endDate"
+                                                value={toDateInputValue(exp.endDate)}
+                                                onChange={(e) => handleExperienceChange(index, e)}
+                                            />
+
+                                        ) : (
+                                            <div className="form-control bg-light">
+                                                {exp.endDate
+                                                    ? new Date(exp.endDate).toLocaleDateString()
+                                                    : "—"}
+                                            </div>
+                                        )}
                                     </Form.Group>
                                 </Col>
                             </Row>
 
+
                             <Row>
+                                {/* OFFER LETTER */}
                                 <Col md={6}>
                                     <Form.Group className="mb-3">
                                         <Form.Label>Upload Offer Letter</Form.Label>
@@ -428,8 +574,18 @@ const PreboardingStageForm = ({
                                                 handleExperienceFileUpload(index, "offerLetter", e.target.files[0])
                                             }
                                         />
+
+                                        {exp.offerLetter?.url && (
+                                            <div className="mt-2">
+                                                <a href={exp.offerLetter.url} target="_blank" rel="noreferrer">
+                                                    View Offer Letter
+                                                </a>
+                                            </div>
+                                        )}
                                     </Form.Group>
                                 </Col>
+
+                                {/* EXPERIENCE LETTER */}
                                 <Col md={6}>
                                     <Form.Group className="mb-3">
                                         <Form.Label>Upload Experience Letter</Form.Label>
@@ -439,11 +595,20 @@ const PreboardingStageForm = ({
                                                 handleExperienceFileUpload(index, "experienceLetter", e.target.files[0])
                                             }
                                         />
+
+                                        {exp.experienceLetter?.url && (
+                                            <div className="mt-2">
+                                                <a href={exp.experienceLetter.url} target="_blank" rel="noreferrer">
+                                                    View Experience Letter
+                                                </a>
+                                            </div>
+                                        )}
                                     </Form.Group>
                                 </Col>
                             </Row>
 
                             <Row>
+                                {/* APPOINTMENT LETTER */}
                                 <Col md={6}>
                                     <Form.Group className="mb-3">
                                         <Form.Label>Upload Appointment Letter</Form.Label>
@@ -453,8 +618,18 @@ const PreboardingStageForm = ({
                                                 handleExperienceFileUpload(index, "appointmentLetter", e.target.files[0])
                                             }
                                         />
+
+                                        {exp.appointmentLetter?.url && (
+                                            <div className="mt-2">
+                                                <a href={exp.appointmentLetter.url} target="_blank" rel="noreferrer">
+                                                    View Appointment Letter
+                                                </a>
+                                            </div>
+                                        )}
                                     </Form.Group>
                                 </Col>
+
+                                {/* SALARY SLIP */}
                                 <Col md={6}>
                                     <Form.Group className="mb-3">
                                         <Form.Label>Upload Salary Slip</Form.Label>
@@ -464,9 +639,18 @@ const PreboardingStageForm = ({
                                                 handleExperienceFileUpload(index, "salarySlip", e.target.files[0])
                                             }
                                         />
+
+                                        {exp.salarySlip?.url && (
+                                            <div className="mt-2">
+                                                <a href={exp.salarySlip.url} target="_blank" rel="noreferrer">
+                                                    View Salary Slip
+                                                </a>
+                                            </div>
+                                        )}
                                     </Form.Group>
                                 </Col>
                             </Row>
+
                         </Card>
                     ))}
                     <Button
@@ -595,6 +779,8 @@ const PreboardingStageForm = ({
                                     name="aadharFile"
                                     onChange={handleFileChange}
                                 />
+                                <ViewFile file={formData.aadharFile} label="Aadhar Card" />
+
                             </Form.Group>
                         </Col>
                         <Col md={6}>
@@ -614,6 +800,8 @@ const PreboardingStageForm = ({
                                     name="panFile"
                                     onChange={handleFileChange}
                                 />
+                                <ViewFile file={formData.panFile} label="PAN Card" />
+
                             </Form.Group>
                         </Col>
                     </Row>
@@ -624,6 +812,8 @@ const PreboardingStageForm = ({
                             name="cancelCheque"
                             onChange={handleFileChange}
                         />
+                        <ViewFile file={formData.cancelCheque} label="Cancel Cheque" />
+
                     </Form.Group>
                 </>
             )}

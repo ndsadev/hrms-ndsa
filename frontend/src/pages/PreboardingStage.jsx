@@ -137,8 +137,16 @@ const PreboardingStage = () => {
 
   const handleSemesterUpload = (index, files) => {
     const updated = [...formData.education];
-    updated[index].semesterResults = Array.from(files);
-    setFormData({ ...formData, education: updated });
+
+    updated[index] = {
+      ...updated[index],
+      semesterResults: Array.from(files),
+    };
+
+    setFormData({
+      ...formData,
+      education: updated,
+    });
   };
 
   const addEducation = () =>
@@ -241,7 +249,12 @@ const PreboardingStage = () => {
 
       case 3:
         formData.certifications.forEach((c, i) => {
-          if (!c.name) stepErrors[`cert_${i}`] = "Required";
+          // agar user ne kuch bhara hi nahi → skip
+          if (!c.name && !c.file) return;
+
+          // agar certificate add kiya hai → dono required
+          if (!c.name) stepErrors[`cert_${i}`] = "Certificate name required";
+          if (!c.file) stepErrors[`cert_file_${i}`] = "Certificate file required";
         });
         break;
 
@@ -320,7 +333,7 @@ const PreboardingStage = () => {
               text={`${percentage}%`}
               styles={buildStyles({
                 textSize: "30px",
-                pathColor: "#45c807",
+                pathColor: "#06406E",
                 textColor: "#000",
                 trailColor: "#d6d6d6",
               })}
@@ -364,7 +377,13 @@ const PreboardingStage = () => {
                 </Button>
               )}
               {step === totalSteps && (
-                <Button variant="success" type="submit">
+                <Button
+                  variant="success"
+                  type="submit"
+                  onClick={() =>
+                    setFormData((p) => ({ ...p, __finalSubmit: true }))
+                  }
+                >
                   Submit
                 </Button>
               )}

@@ -3,8 +3,12 @@ import SummaryApi from "../common/index";
 
 // Axios Instance
 const api = axios.create({
-  baseURL: "http://localhost:5000",
+  baseURL:
+    // "http://localhost:5000",
+    import.meta.env.VITE_BACKEND_URL,
+  withCredentials: true,
 });
+
 
 // Request Intercepter
 api.interceptors.request.use(

@@ -36,6 +36,17 @@ const FileLink = ({ file }) => {
     );
 };
 
+const formatDate = (date) => {
+    if (!date) return "";
+    const d = new Date(date);
+    if (isNaN(d)) return "";
+    return d.toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+    });
+};
+
 const EmployeeProfileView = ({ data }) => {
     if (!data) return null;
 
@@ -164,7 +175,10 @@ const EmployeeProfileView = ({ data }) => {
             <Row className="mb-3">
                 <Col md={6}>
                     <Form.Label style={labelStyle}>Date of Birth</Form.Label>
-                    <Form.Control value={personalDetails.dob || ""} readOnly />
+                    <Form.Control
+                        value={formatDate(personalDetails.dob)}
+                        readOnly
+                    />
                 </Col>
                 <Col md={6}>
                     <Form.Label style={labelStyle}>Blood Group</Form.Label>

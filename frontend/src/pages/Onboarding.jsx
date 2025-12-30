@@ -9,6 +9,9 @@ import useOnboarding from "../hooks/onboarding/useOnboarding";
 import api from "../api/axiosInstance";
 import SummaryApi from "../common";
 import OnboardingTable from "../components/OnboardingTable";
+import { useDispatch } from "react-redux";
+import { updateEmployeeInList } from "../store/onboardingSlice";
+
 
 const Onboarding = () => {
     const initialFormData = {
@@ -84,20 +87,22 @@ const Onboarding = () => {
     const {
         employees,
         fetchEmployees,
+        hasFetched,
         viewEmployee,
         editEmployee,
         deleteEmployee,
         showModal,
-        setShowModal,
+        closeModal,
         selectedEmployee,
         loading,
         mode,
         listLoading,
     } = useOnboarding();
-
+    const dispatch = useDispatch();
+    const [saving, setSaving] = useState(false);
 
     useEffect(() => {
-        fetchEmployees((msg) => toast.error(msg));
+        fetchEmployees(null, { showLoader: true });
     }, []);
 
 
@@ -130,7 +135,10 @@ const Onboarding = () => {
     };
 
     const handleSave = async () => {
+        if (saving) return;
+
         try {
+            setSaving(true);
             const fd = new FormData();
 
             // BASIC
@@ -216,14 +224,70 @@ const Onboarding = () => {
                 fd
             );
 
+            // 🔥 BACKEND SE UPDATED DATA LOO
+            const updatedProfile = res.data.data;
+
+            dispatch(
+                updateEmployeeInList({
+                    employeeId: updatedProfile.employeeId,
+                    updates: {
+                        name: updatedProfile.personalDetails?.firstName + " " +
+                            updatedProfile.personalDetails?.lastName,
+                        email: updatedProfile.personalDetails?.email,
+                        status: updatedProfile.status, // ✅ REAL FIX
+                    },
+                })
+            );
             toast.success("Profile updated successfully");
-            setShowModal(false);
-            fetchEmployees();
+            closeModal();
         } catch (err) {
-            console.error(err);
             toast.error("❌ Update error");
+        } finally {
+            setSaving(false);
         }
     };
+
+    const confirmDelete = (emp) => {
+        toast(
+            ({ closeToast }) => (
+                <div>
+                    <p className="mb-2">
+                        ⚠️ Are you sure you want to delete ?
+
+                    </p>
+
+                    <div className="d-flex justify-content-start gap-2">
+                        <button
+                            className="btn btn-danger btn-sm"
+                            onClick={() => {
+                                deleteEmployee(
+                                    emp,
+                                    (msg) => toast.success(msg),
+                                    (err) => toast.error(err)
+                                );
+                                closeToast();
+                            }}
+                        >
+                            Yes, Delete
+                        </button>
+
+                        <button
+                            className="btn btn-secondary btn-sm"
+                            onClick={closeToast}
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            ),
+            {
+                autoClose: false,
+                closeOnClick: false,
+                draggable: false,
+            }
+        );
+    };
+
 
 
     const handleUploadChange = (e) => {
@@ -462,16 +526,17 @@ const Onboarding = () => {
             <Container>
                 <div className="d-flex justify-content-between align-items-center page-header flex-wrap gap-2">
                     <h5 className="mb-0 d-flex align-items-center text-white page-title">
-                        <HiOutlineDocumentArrowUp className="me-2" size={28} /> Employee Data
+                        <HiOutlineDocumentArrowUp className="me-2" size={28} /> Onboarding
                     </h5>
                 </div>
 
                 <OnboardingTable
                     employees={employees}
                     listLoading={listLoading}
+                    hasFetched={hasFetched}
                     onView={viewEmployee}
                     onEdit={editEmployee}
-                    onDelete={deleteEmployee}
+                    onDelete={confirmDelete}
                     onUploadClick={(emp) => {
                         setUploadData(emp.uploadDocuments || initialFormData.uploadDocuments);
                         setShowUploadModal(true);
@@ -479,7 +544,7 @@ const Onboarding = () => {
                 />
 
                 {/* View/Edit Modal */}
-                <Modal show={showModal} onHide={() => setShowModal(false)} size="xl">
+                <Modal show={showModal} onHide={closeModal} size="xl">
                     <Modal.Header closeButton>
 
                         <Modal.Title>
@@ -531,17 +596,32 @@ const Onboarding = () => {
                                 )}
 
                                 {currentStep === 6 && (
-                                    <Button variant="success" onClick={handleSave}>
-                                        Update
+                                    <Button
+                                        variant="success"
+                                        type="button"
+                                        onClick={handleSave}
+                                        disabled={saving}
+                                        className="d-flex align-items-center gap-2"
+                                    >
+                                        {saving && (
+                                            <span
+                                                className="spinner-border spinner-border-sm"
+                                                role="status"
+                                                aria-hidden="true"
+                                            />
+                                        )}
+                                        {saving ? "Updating..." : "Update"}
                                     </Button>
+
                                 )}
                             </>
                         )}
 
                         {mode === "view" && (
-                            <Button variant="secondary" onClick={() => setShowModal(false)}>
+                            <Button variant="secondary" onClick={closeModal}>
                                 Close
                             </Button>
+
                         )}
                     </Modal.Footer>
                 </Modal>

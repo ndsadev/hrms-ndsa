@@ -1,4 +1,6 @@
-const backendDomain = "http://localhost:5000";
+// const backendDomain = "http://localhost:5000";
+const backendDomain = import.meta.env.VITE_BACKEND_URL;
+
 
 const SummaryApi = {
 
@@ -65,7 +67,6 @@ const SummaryApi = {
     method: "get",
   },
 
-  // (OPTIONAL – FUTURE USE)
   // GET PREBOARDING PROFILE BY USER ID (HR / ADMIN)
   getPreboardingProfileByUser: {
     url: (userId) =>

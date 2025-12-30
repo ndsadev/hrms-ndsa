@@ -9,10 +9,11 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useLocation } from "react-router-dom";
 import usePreboarding from "../hooks/usePreboarding";
+import { useDispatch } from "react-redux";
+
 
 const getInitialFormData = (employee, nameParts) => ({
   employeeId: employee?.employeeId || "",
-
   profilePic: null,
 
   firstName: nameParts.firstName,
@@ -95,22 +96,13 @@ const splitFullName = (fullName = "") => {
 
 const PreboardingStage = () => {
   const [step, setStep] = useState(1);
-  const [employees, setEmployees] = useState([]);
   const navigate = useNavigate();
   const location = useLocation();
   const employee = location.state?.employee;
   const nameParts = splitFullName(employee?.name || "");
   const { saveProfile } = usePreboarding();
+  const dispatch = useDispatch();
 
-
-  useEffect(() => {
-    const stored = localStorage.getItem("employees");
-    if (stored) setEmployees(JSON.parse(stored));
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem("employees", JSON.stringify(employees));
-  }, [employees]);
 
   const [formData, setFormData] = useState(
     getInitialFormData(employee, nameParts)
@@ -288,22 +280,26 @@ const PreboardingStage = () => {
   };
 
   const prevStep = () => setStep(step - 1);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateStep()) return;
 
-    // backend save
-    const res = await saveProfile(formData);
-
-    if (!res?.success) {
-      toast.error("Failed to save preboarding profile");
-      return;
+    try {
+      const res = await saveProfile(formData);
+      if (!res?.success) {
+        toast.error("Failed to save preboarding profile");
+        return;
+      }
+      toast.success("Preboarding Profile Saved Successfully!");
+      navigate("/dashboard/onboarding");
+    } catch (err) {
+      console.error(err);
+      toast.error("Something went wrong while saving profile");
     }
-
-    toast.success("Preboarding Profile Saved Successfully!");
-    setFormData(getInitialFormData(employee, nameParts));
-    setStep(1);
   };
+
+
 
   return (
     <>

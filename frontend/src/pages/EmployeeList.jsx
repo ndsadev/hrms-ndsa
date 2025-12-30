@@ -112,63 +112,67 @@ const EmployeeList = () => {
         </div>
 
         <div className="users-card">
-          <table className="users-table">
-            <thead>
-              <tr>
-                <th>Sr.</th>
-                <th>Employee ID</th>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Phone</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {users.length === 0 ? (
+          {loading ? (
+            <div className="content-loader">
+              <Loader />
+            </div>
+          ) : (
+            <table className="users-table">
+              <thead>
                 <tr>
-                  <td colSpan="6" style={{ padding: 20 }}>
-                    No employees found
-                  </td>
+                  <th>Sr.</th>
+                  <th>Employee ID</th>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Phone</th>
+                  <th>Action</th>
                 </tr>
-              ) : (
-                users.map((emp, index) => (
-                  <tr key={emp._id}>
-                    <td>{index + 1}</td>
-                    <td>{emp.employeeId || "-"}</td>
-                    <td>{emp.name}</td>
-                    <td>{emp.email}</td>
-                    <td>{emp.phone || "-"}</td>
-                    <td>
-                      {preboardedIds.has(emp.employeeId) ? (
-                        <span
-                          title="Preboarding started"
-                          style={{
-                            color: "green",
-                            fontSize: "18px",
-                            fontWeight: "bold",
-                            cursor: "default",
-                          }}
-                        >
-                          ✔
-                        </span>
-                      ) : (
-                        <button
-                          className="action-btn"
-                          title="Start Preboarding"
-                          onClick={() => handlePreboarding(emp)}
-                        >
-                          <FaUserEdit />
-                        </button>
-                      )}
+              </thead>
+
+              <tbody>
+                {users.length === 0 ? (
+                  <tr>
+                    <td colSpan="6" style={{ padding: 20 }}>
+                      No employees found
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ) : (
+                  users.map((emp, index) => (
+                    <tr key={emp._id}>
+                      <td>{index + 1}</td>
+                      <td>{emp.employeeId || "-"}</td>
+                      <td>{emp.name}</td>
+                      <td>{emp.email}</td>
+                      <td>{emp.phone || "-"}</td>
+                      <td>
+                        {preboardedIds.has(emp.employeeId) ? (
+                          <span
+                            title="Preboarding started"
+                            style={{
+                              color: "green",
+                              fontSize: "18px",
+                              fontWeight: "bold",
+                              cursor: "default",
+                            }}
+                          >✔</span>
+                        ) : (
+                          <button
+                            className="action-btn"
+                            onClick={() => handlePreboarding(emp)}
+                          >
+                            <FaUserEdit />
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          )}
         </div>
       </Container>
+
     </>
   );
 };

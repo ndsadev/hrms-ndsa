@@ -1,6 +1,7 @@
 import React from "react";
 import { HiOutlineDocumentArrowUp } from "react-icons/hi2";
 import { FaEye, FaEdit, FaTrash } from "react-icons/fa";
+import Loader from "../components/Loader";
 
 const getStatusClass = (status) => {
   switch (status) {
@@ -16,15 +17,22 @@ const getStatusClass = (status) => {
 };
 
 const OnboardingTable = ({
-  employees,
+  employees = [],
   listLoading,
+  hasFetched = false, // ✅ UPDATE 1: SAFE DEFAULT
   onView,
   onEdit,
   onDelete,
   onUploadClick,
 }) => {
   return (
-    <div style={{ borderRadius: "12px", border: "1px solid #ddd", overflowX: "auto" }}>
+    <div
+      style={{
+        borderRadius: "12px",
+        border: "1px solid #ddd",
+        overflowX: "auto",
+      }}
+    >
       <div className="users-card">
         <table className="users-table">
           <thead>
@@ -39,13 +47,18 @@ const OnboardingTable = ({
           </thead>
 
           <tbody>
-            {listLoading && employees.length === 0 ? (
+            {/* 🔹 1. TABLE LOADER */}
+            {listLoading ? (
               <tr>
-                <td colSpan="6" className="text-center py-4">
-                  Loading employees...
+                <td colSpan="6" className="py-5 text-center">
+                  <Loader variant="inline" text="ND Savla" />
                 </td>
               </tr>
+            ) : !hasFetched ? (
+              /* 🔹 2. FIRST LOAD (navigate) → show nothing */
+              null
             ) : employees.length > 0 ? (
+              /* 🔹 3. DATA */
               employees.map((emp) => (
                 <tr key={emp._id}>
                   <td>{emp.employeeId}</td>
@@ -61,7 +74,9 @@ const OnboardingTable = ({
                         opacity: listLoading ? 0.5 : 1,
                         pointerEvents: listLoading ? "none" : "auto",
                       }}
-                      onClick={() => onUploadClick(emp)}
+                      onClick={() =>
+                        !listLoading && onUploadClick(emp)
+                      }
                     />
                   </td>
 
@@ -81,7 +96,7 @@ const OnboardingTable = ({
                     <div className="action-group">
                       <button
                         className="action-btn view-btn"
-                        disabled={listLoading}
+                        disabled={listLoading}          // ✅ UPDATE 2
                         onClick={() => onView(emp)}
                       >
                         <FaEye size={14} />
@@ -89,7 +104,7 @@ const OnboardingTable = ({
 
                       <button
                         className="action-btn edit-btn"
-                        disabled={listLoading}
+                        disabled={listLoading}          // ✅ UPDATE 2
                         onClick={() => onEdit(emp)}
                       >
                         <FaEdit size={14} />
@@ -97,7 +112,7 @@ const OnboardingTable = ({
 
                       <button
                         className="action-btn delete-btn"
-                        disabled={listLoading}
+                        disabled={listLoading}          // ✅ UPDATE 2
                         onClick={() => onDelete(emp)}
                       >
                         <FaTrash size={14} />
@@ -107,6 +122,7 @@ const OnboardingTable = ({
                 </tr>
               ))
             ) : (
+              /* 🔹 4. API COMPLETE BUT EMPTY */
               <tr>
                 <td colSpan="6" className="text-center py-4">
                   No Employees Found

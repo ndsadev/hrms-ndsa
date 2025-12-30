@@ -230,11 +230,31 @@ const AllUsers = () => {
         }
 
         .users-card {
-          background: #fff;
-          border-radius: 12px;
-          box-shadow: 0 6px 25px rgba(0,0,0,0.08);
-          overflow: hidden;
+        background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 6px 25px rgba(0,0,0,0.08);
+  overflow-x: auto;        /* ✅ horizontal scroll */
+  max-width: 100%;
+  scrollbar-width: thin;                 /* Firefox */
+  scrollbar-color: #9bc09266 transparent;  /* thumb | track */
         }
+
+        .users-card::-webkit-scrollbar {
+  height: 5px;        /* ✅ patla */
+}
+
+.users-card::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.users-card::-webkit-scrollbar-thumb {
+  background-color: #9bc092;   /* soft green */
+  border-radius: 10px;
+}
+
+.users-card::-webkit-scrollbar-thumb:hover {
+  background-color: #70a664;
+}
 
         .users-table {
           width: 100%;
@@ -251,6 +271,7 @@ const AllUsers = () => {
           padding: 8px 14px;
           text-align: center;
           border-bottom: 1px solid #e5e5e5;
+            white-space: nowrap; 
         }
 
         .users-table tbody tr:hover {

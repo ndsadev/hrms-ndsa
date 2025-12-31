@@ -1,7 +1,6 @@
 // const backendDomain = "http://localhost:5000";
 const backendDomain = import.meta.env.VITE_BACKEND_URL;
 
-
 const SummaryApi = {
 
   // LOGIN
@@ -92,7 +91,6 @@ const SummaryApi = {
       `${backendDomain}/api/hr/preboarding/delete/${employeeId}`,
     method: "delete",
   },
-
 
 };
 

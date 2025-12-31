@@ -224,7 +224,7 @@ const Onboarding = () => {
                 fd
             );
 
-            // 🔥 BACKEND SE UPDATED DATA LOO
+            // BACKEND SE UPDATED DATA LOO
             const updatedProfile = res.data.data;
 
             dispatch(
@@ -234,7 +234,7 @@ const Onboarding = () => {
                         name: updatedProfile.personalDetails?.firstName + " " +
                             updatedProfile.personalDetails?.lastName,
                         email: updatedProfile.personalDetails?.email,
-                        status: updatedProfile.status, // ✅ REAL FIX
+                        status: updatedProfile.status, 
                     },
                 })
             );

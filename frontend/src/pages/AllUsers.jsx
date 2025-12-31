@@ -233,14 +233,14 @@ const AllUsers = () => {
         background: #fff;
   border-radius: 12px;
   box-shadow: 0 6px 25px rgba(0,0,0,0.08);
-  overflow-x: auto;        /* ✅ horizontal scroll */
+  overflow-x: auto;     
   max-width: 100%;
-  scrollbar-width: thin;                 /* Firefox */
-  scrollbar-color: #9bc09266 transparent;  /* thumb | track */
+  scrollbar-width: thin;          
+  scrollbar-color: #9bc09266 transparent; 
         }
 
         .users-card::-webkit-scrollbar {
-  height: 5px;        /* ✅ patla */
+  height: 5px;      
 }
 
 .users-card::-webkit-scrollbar-track {
@@ -248,7 +248,7 @@ const AllUsers = () => {
 }
 
 .users-card::-webkit-scrollbar-thumb {
-  background-color: #9bc092;   /* soft green */
+  background-color: #9bc092; 
   border-radius: 10px;
 }
 

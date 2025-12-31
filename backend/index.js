@@ -4,6 +4,7 @@ const express = require("express");
 const cors = require("cors");
 const morgan = require("morgan");
 const connectDB = require("./config/db");
+const cookieParser = require("cookie-parser");
 
 const authRoutes = require("./routes/authRoutes");
 const preboardingRoutes = require("./routes/preboardingRoutes");
@@ -43,6 +44,7 @@ if (process.env.NODE_ENV === "development") {
 
 // Body Parser
 app.use(express.json({ limit: "20mb" }));
+app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 
 // API routes

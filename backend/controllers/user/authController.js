@@ -120,6 +120,10 @@ exports.loginUser = async (req, res) => {
 // Refresh token - Renew new Access Token
 exports.refreshAccessToken = async (req, res) => {
   try {
+    if (!req.cookies) {
+      return res.status(401).json({ message: "Cookies not found" });
+    }
+
     const token = req.cookies.refreshToken;
 
     if (!token) {
@@ -144,19 +148,18 @@ exports.refreshAccessToken = async (req, res) => {
       });
     });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error("REFRESH TOKEN ERROR:", err);
+    return res.status(500).json({ message: "Server error" });
   }
 };
 
 // Logout
 exports.logoutUser = async (req, res) => {
   try {
-    const { refreshToken } = req.body;
+    const refreshToken = req.cookies.refreshToken;
 
     if (!refreshToken) {
-      return res.status(400).json({
-        message: "Refresh token is required",
-      });
+      return res.status(200).json({ success: true });
     }
 
     const user = await User.findOne({ refreshToken });
@@ -166,11 +169,19 @@ exports.logoutUser = async (req, res) => {
       await user.save();
     }
 
-    res.status(200).json({
-      success: true,
-      message: "Logged out successfully",
-    });
+    res
+      .clearCookie("refreshToken", {
+        httpOnly: true,
+        sameSite: "lax",
+        secure: false,
+      })
+      .status(200)
+      .json({
+        success: true,
+        message: "Logged out successfully",
+      });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
+

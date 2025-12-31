@@ -93,12 +93,11 @@ exports.loginUser = async (req, res) => {
     user.refreshToken = refreshToken;
     await user.save();
 
-    res
-      .cookie("refreshToken", refreshToken, {
-        httpOnly: true,
-        secure: false,    
-        sameSite: "lax",  
-      })
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    })
       .status(200)
       .json({
         success: true,
@@ -169,12 +168,11 @@ exports.logoutUser = async (req, res) => {
       await user.save();
     }
 
-    res
-      .clearCookie("refreshToken", {
-        httpOnly: true,
-        sameSite: "lax",
-        secure: false,
-      })
+    res.clearCookie("refreshToken", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    })
       .status(200)
       .json({
         success: true,

@@ -230,17 +230,45 @@ const EmployeeProfileView = ({ data }) => {
                             </Col>
                         </Row>
 
-                        <Form.Label style={labelStyle}>Semester Results</Form.Label>
+                        {/* Dynamic Results Title */}
+                        <Form.Label style={labelStyle}>
+                            {(edu.qualification || "Education")} Results
+                        </Form.Label>
+
                         {edu.semesterResults?.length ? (
-                            edu.semesterResults.map((s, idx) => (
-                                <div key={idx} className="mb-1">
-                                    <strong>Semester {s.semester}:</strong>{" "}
-                                    <FileLink file={s.file} />
-                                </div>
-                            ))
+                            <div
+                                style={{
+                                    border: "1px solid #ced4da",
+                                    borderRadius: "6px",
+                                    padding: "8px 12px",
+                                    background: "#f8f9fa",
+                                    display: "flex",
+                                    gap: "12px",
+                                    flexWrap: "wrap",
+                                    alignItems: "center",
+                                }}
+                            >
+                                {edu.semesterResults.map((s, idx) => (
+                                    <a
+                                        key={idx}
+                                        href={s.file?.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        style={{
+                                            color: PRIMARY,
+                                            fontWeight: 600,
+                                            textDecoration: "underline",
+                                            whiteSpace: "nowrap",
+                                        }}
+                                    >
+                                        View {idx + 1}
+                                    </a>
+                                ))}
+                            </div>
                         ) : (
                             <Form.Control value="—" readOnly />
                         )}
+
                     </div>
                 ))
             ) : (
@@ -435,29 +463,19 @@ const EmployeeProfileView = ({ data }) => {
             <Row className="mb-3">
                 <Col md={4}>
                     <Form.Label style={labelStyle}>Aadhaar Card</Form.Label>
-                    <Form.Control
-                        value={bankDetails.aadharFile ? "Uploaded" : "—"}
-                        readOnly
-                    />
+                    <FileLink file={bankDetails.aadharFile} />
                 </Col>
 
                 <Col md={4}>
                     <Form.Label style={labelStyle}>PAN Card</Form.Label>
-                    <Form.Control
-                        value={bankDetails.panFile ? "Uploaded" : "—"}
-                        readOnly
-                    />
+                    <FileLink file={bankDetails.panFile} />
                 </Col>
 
                 <Col md={4}>
                     <Form.Label style={labelStyle}>Cancelled Cheque</Form.Label>
-                    <Form.Control
-                        value={bankDetails.cancelCheque ? "Uploaded" : "—"}
-                        readOnly
-                    />
+                    <FileLink file={bankDetails.cancelCheque} />
                 </Col>
             </Row>
-
 
             {/* emergency contact details */}
             <div style={sectionStyle}>

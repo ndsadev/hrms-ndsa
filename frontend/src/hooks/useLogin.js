@@ -1,13 +1,11 @@
 import { useState } from "react";
 import { useDispatch } from "react-redux";
-
 import api from "../api/axiosInstance";
 import SummaryApi from "../common";
 import { setUser, setLoading, setError } from "../store/userSlice";
 
 export const useLogin = () => {
   const dispatch = useDispatch();
-
   const [error, setLocalError] = useState(null);
 
   const login = async (form) => {
@@ -21,11 +19,10 @@ export const useLogin = () => {
         data: form,
       });
 
-      const { accessToken, refreshToken, user } = res.data;
+      const { accessToken, user } = res.data;
 
-      // Save tokens
+      // ONLY access token store karo
       localStorage.setItem("accessToken", accessToken);
-      localStorage.setItem("refreshToken", refreshToken);
 
       // Redux update
       dispatch(
@@ -35,13 +32,10 @@ export const useLogin = () => {
         })
       );
 
-      // clear any previous error
       dispatch(setError(null));
       setLocalError(null);
-
       dispatch(setLoading(false));
 
-      // MUST return user for role-based redirect
       return {
         success: true,
         user,

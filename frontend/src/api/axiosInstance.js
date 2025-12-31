@@ -4,19 +4,18 @@ import SummaryApi from "../common/index";
 // Axios Instance
 const api = axios.create({
   baseURL:
-    // "http://localhost:5000",
-    import.meta.env.VITE_BACKEND_URL,
+  //  "http://localhost:5000",
+  import.meta.env.VITE_BACKEND_URL,
   withCredentials: true,
 });
 
-
-// Request Intercepter
+// Request Interceptor
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("accessToken");
+    const accessToken = localStorage.getItem("accessToken");
 
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    if (accessToken) {
+      config.headers.Authorization = `Bearer ${accessToken}`;
     }
 
     return config;
@@ -24,67 +23,42 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Request Intercepter
+// Response Interceptor
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
 
-    //  Skip refresh token call itself
-    if (
-      originalRequest?.url?.includes("/refresh-token")
-    ) {
+    // refresh-token API ko loop se bachao
+    if (originalRequest?.url?.includes("/refresh-token")) {
       return Promise.reject(error);
     }
 
     const status = error.response?.status;
-    const errorMessage =
-      error.response?.data?.message?.toLowerCase() || "";
 
-    const isJwtExpired =
-      (status === 401 || status === 403) &&
-      (errorMessage.includes("jwt expired") ||
-        errorMessage.includes("token expired")) &&
-      !originalRequest._retry;
-
-    if (isJwtExpired) {
+    // Access token expired
+    if ((status === 401 || status === 403) && !originalRequest._retry) {
       originalRequest._retry = true;
 
-      const refreshToken = localStorage.getItem("refreshToken");
-
-      if (!refreshToken) {
-        console.warn("No refresh token found. Redirecting to login...");
-        localStorage.removeItem("accessToken");
-        localStorage.removeItem("refreshToken");
-        window.location.href = "/login";
-        return Promise.reject(error);
-      }
-
       try {
-        //  Refresh token using SAME instance
-        const res = await api.post(
-          SummaryApi.refreshToken.url,
-          { refreshToken }
-        );
+        // Refresh token cookie se automatically jayega
+        const res = await api.post(SummaryApi.refreshToken.url);
 
-        const {
-          accessToken,
-          refreshToken: newRefreshToken,
-        } = res.data;
+        const { accessToken } = res.data;
 
-        //  Save new tokens
+        // Save new access token
         localStorage.setItem("accessToken", accessToken);
-        localStorage.setItem("refreshToken", newRefreshToken);
 
-        //  Retry original request
+        // Retry original request
         originalRequest.headers.Authorization = `Bearer ${accessToken}`;
         return api(originalRequest);
       } catch (refreshError) {
         console.error("Refresh token failed:", refreshError);
 
+        // Session expired → logout
         localStorage.removeItem("accessToken");
-        localStorage.removeItem("refreshToken");
         window.location.href = "/login";
+        return Promise.reject(refreshError);
       }
     }
 

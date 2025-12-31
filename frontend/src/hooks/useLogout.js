@@ -8,20 +8,16 @@ export const useLogout = () => {
 
   const logout = async () => {
     try {
-      const refreshToken = localStorage.getItem("refreshToken");
-
-      if (refreshToken) {
-        await api({
-          url: SummaryApi.logout.url,
-          method: SummaryApi.logout.method,
-          data: { refreshToken },
-        });
-      }
+      //  Refresh token cookie automatically jayegi
+      await api({
+        url: SummaryApi.logout.url,
+        method: SummaryApi.logout.method,
+      });
     } catch (err) {
       console.warn("Logout API failed, clearing session anyway");
     } finally {
+      //  Only accessToken clear karo
       localStorage.removeItem("accessToken");
-      localStorage.removeItem("refreshToken");
       dispatch(clearUser());
     }
 

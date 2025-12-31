@@ -57,7 +57,7 @@ api.interceptors.response.use(
 
         // Session expired → logout
         localStorage.removeItem("accessToken");
-        window.location.href = "/login";
+        window.location.href = "/";
         return Promise.reject(refreshError);
       }
     }

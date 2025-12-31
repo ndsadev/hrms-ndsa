@@ -93,18 +93,25 @@ exports.loginUser = async (req, res) => {
     user.refreshToken = refreshToken;
     await user.save();
 
-    res.status(200).json({
-      success: true,
-      message: "Login successful",
-      accessToken,
-      refreshToken,
-      user: {
-        id: user._id,
-        name: user.name,
-        employeeId: user.employeeId,
-        role: user.role,
-      },
-    });
+    res
+      .cookie("refreshToken", refreshToken, {
+        httpOnly: true,
+        secure: false,    
+        sameSite: "lax",  
+      })
+      .status(200)
+      .json({
+        success: true,
+        message: "Login successful",
+        accessToken,
+        user: {
+          id: user._id,
+          name: user.name,
+          employeeId: user.employeeId,
+          role: user.role,
+        },
+      });
+
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -113,10 +120,10 @@ exports.loginUser = async (req, res) => {
 // Refresh token - Renew new Access Token
 exports.refreshAccessToken = async (req, res) => {
   try {
-    const token = req.body.refreshToken;
+    const token = req.cookies.refreshToken;
 
     if (!token) {
-      return res.status(401).json({ message: "No refresh token provided" });
+      return res.status(401).json({ message: "No refresh token" });
     }
 
     const user = await User.findOne({ refreshToken: token });
@@ -124,31 +131,22 @@ exports.refreshAccessToken = async (req, res) => {
       return res.status(403).json({ message: "Invalid refresh token" });
     }
 
-    jwt.verify(
-      token,
-      process.env.JWT_REFRESH_SECRET,
-      (err, decoded) => {
-        if (err) {
-          return res.status(403).json({
-            message: "Invalid or expired refresh token",
-          });
-        }
-
-        // 🔥 ONLY ACCESS TOKEN ROTATE
-        const newAccessToken = generateAccessToken(user);
-
-        return res.status(200).json({
-          success: true,
-          accessToken: newAccessToken,
-          refreshToken: token, // 👈 SAME TOKEN
-        });
+    jwt.verify(token, process.env.JWT_REFRESH_SECRET, (err) => {
+      if (err) {
+        return res.status(403).json({ message: "Refresh token expired" });
       }
-    );
+
+      const newAccessToken = generateAccessToken(user);
+
+      return res.status(200).json({
+        success: true,
+        accessToken: newAccessToken,
+      });
+    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 };
-
 
 // Logout
 exports.logoutUser = async (req, res) => {

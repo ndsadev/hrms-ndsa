@@ -53,7 +53,7 @@ app.use("/api/hr", preboardingRoutes);
 app.get("/", (req, res) => {
   res.status(200).json({
     success: true,
-    message: "🚀 HRMS Backend Server is running",
+    message: "HRMS Backend Server is running",
   });
 });
 

@@ -35,7 +35,7 @@ const roleMenus = {
   ],
 
   ADMIN: [
-    { label: "Create Assets", path: "assets", icon: <FaLaptop size={18} /> },
+    { label: "Create Assets", path: "create-assets", icon: <FaLaptop size={18} /> },
     { label: "Assets List", path: "assets-list", icon: <FaListAlt size={18} /> },
   ],
 };

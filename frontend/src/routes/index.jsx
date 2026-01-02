@@ -6,10 +6,10 @@ import CreateUsers from "../pages/CreateUsers.jsx";
 import AllUsers from "../pages/AllUsers.jsx";
 import Profile from "../pages/PreboardingStage.jsx";
 import Onboarding from "../pages/Onboarding.jsx";
-import Assets from "../pages/Assets.jsx";
 import AssetsList from "../pages/AssetsList.jsx";
 import EmployeeList from "../pages/EmployeeList.jsx";
 import ProtectedRoute from "./ProtectedRoute";
+import CreateAssets from "../pages/CreateAssets.jsx";
 
 const router = createBrowserRouter([
   {
@@ -76,10 +76,10 @@ const router = createBrowserRouter([
 
           // ADMIN ONLY
           {
-            path: "assets",
+            path: "create-assets",
             element: (
               <ProtectedRoute allowedRoles={["ADMIN"]}>
-                <Assets />
+               <CreateAssets/>
               </ProtectedRoute>
             ),
           },

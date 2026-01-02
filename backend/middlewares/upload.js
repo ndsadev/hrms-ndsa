@@ -3,9 +3,7 @@ const path = require("path");
 const { CloudinaryStorage } = require("multer-storage-cloudinary");
 const cloudinary = require("../config/cloudinary");
 
-// ================================
-// CLOUDINARY STORAGE
-// ================================
+// Cloudinary storage
 const storage = new CloudinaryStorage({
   cloudinary,
   params: async (req, file) => {
@@ -42,9 +40,7 @@ const storage = new CloudinaryStorage({
   },
 });
 
-// ================================
-// FILE FILTER
-// ================================
+// File filter
 const allowedMimeTypes = [
   "image/jpeg",
   "image/png",
@@ -64,14 +60,12 @@ const fileFilter = (req, file, cb) => {
   cb(null, true);
 };
 
-// ================================
-// MULTER INSTANCE
-// ================================
+// multer instance
 const upload = multer({
   storage,
   fileFilter,
   limits: { fileSize: 10 * 1024 * 1024 },
 });
 
-// ✅ IMPORTANT
+// IMPORTANT
 exports.preboardingUpload = upload.any();

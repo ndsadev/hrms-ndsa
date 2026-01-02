@@ -56,7 +56,7 @@ const Login = () => {
       } else if (role === "HR") {
         navigate("/dashboard/employee-list", { replace: true });
       } else if (role === "ADMIN") {
-        navigate("/dashboard/assets", { replace: true });
+        navigate("/dashboard/create-assets", { replace: true });
       } else {
         navigate("/dashboard", { replace: true });
       }

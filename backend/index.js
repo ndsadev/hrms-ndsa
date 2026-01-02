@@ -8,6 +8,7 @@ const cookieParser = require("cookie-parser");
 
 const authRoutes = require("./routes/authRoutes");
 const preboardingRoutes = require("./routes/preboardingRoutes");
+const laptopAssetRoutes = require("./routes/laptopAssetRoutes");
 
 // Connect MongoDB
 connectDB();
@@ -48,6 +49,7 @@ app.use(express.urlencoded({ extended: true }));
 // API routes
 app.use("/api/auth", authRoutes);
 app.use("/api/hr", preboardingRoutes);
+app.use("/api/admin", laptopAssetRoutes);
 
 // Health check
 app.get("/", (req, res) => {

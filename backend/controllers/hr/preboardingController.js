@@ -1,8 +1,6 @@
 const PreboardingProfile = require("../../models/PreboardingProfile");
 
-// ================================
 // Helper: File Mapper
-// ================================
 const mapSingleFile = (file) => {
   if (!file) return null;
   return {
@@ -11,9 +9,7 @@ const mapSingleFile = (file) => {
   };
 };
 
-// ================================
 // Helper: Safe JSON Parse
-// ================================
 const safeJsonParse = (value, fallback) => {
   try {
     if (!value) return fallback;
@@ -24,17 +20,16 @@ const safeJsonParse = (value, fallback) => {
   }
 };
 
-// ================================
-// 🔥 FINAL PROFILE COMPLETION CHECK
+// FINAL PROFILE COMPLETION CHECK
 // RULE: koi bhi field empty → IN_PROGRESS
-// ================================
+
 const isProfileComplete = (profileDoc) => {
   const profile = profileDoc.toObject({
     depopulate: true,
     versionKey: false,
   });
 
-  // 🔕 fields / sections to IGNORE from validation
+  // fields / sections to IGNORE from validation
   const IGNORE_KEYS = [
     "_id",
     "createdBy",
@@ -44,7 +39,7 @@ const isProfileComplete = (profileDoc) => {
     "userId",
     "__v",
 
-    // 🔥 OPTIONAL SECTIONS
+    // OPTIONAL SECTIONS
     "certifications",
     "experiences",
   ];
@@ -57,7 +52,7 @@ const isProfileComplete = (profileDoc) => {
     }
 
     if (Array.isArray(value)) {
-      // ✅ empty array allowed ONLY for optional sections
+      // empty array allowed ONLY for optional sections
       if (value.length === 0) return false;
       return value.some((v) => hasEmpty(v, path));
     }
@@ -75,16 +70,12 @@ const isProfileComplete = (profileDoc) => {
   return !hasEmpty(profile);
 };
 
-// ================================
 // CREATE / UPDATE PREBOARDING PROFILE
-// ================================
 exports.savePreboardingProfile = async (req, res) => {
   try {
     const userId = req.user._id;
 
-    // ================================
-    // FILES MAP
-    // ================================
+ // FILES MAP
     const filesMap = {};
     (req.files || []).forEach((file) => {
       if (!filesMap[file.fieldname]) {
@@ -93,18 +84,14 @@ exports.savePreboardingProfile = async (req, res) => {
       filesMap[file.fieldname].push(file);
     });
 
-    // ================================
     // SAFE PARSING
-    // ================================
     const education = safeJsonParse(req.body.education, []);
     const certifications = safeJsonParse(req.body.certifications, []);
     const experiences = safeJsonParse(req.body.experiences, []);
     const bankDetails = safeJsonParse(req.body.bankDetails, null);
     const emergencyContact = safeJsonParse(req.body.emergencyContact, null);
 
-    // ================================
     // FIND OR CREATE PROFILE
-    // ================================
     let profile = await PreboardingProfile.findOne({
       employeeId: req.body.employeeId,
     });
@@ -118,9 +105,7 @@ exports.savePreboardingProfile = async (req, res) => {
       });
     }
 
-    // ================================
     // STEP 1: PERSONAL DETAILS
-    // ================================
     profile.personalDetails = {
       firstName: req.body.firstName,
       middleName: req.body.middleName,
@@ -135,9 +120,7 @@ exports.savePreboardingProfile = async (req, res) => {
         : profile.personalDetails?.profilePic,
     };
 
-    // ================================
     // STEP 2: EDUCATION (RETAIN OLD FILES)
-    // ================================
     profile.education = education.map((edu, index) => ({
       qualification: edu.qualification,
       university: edu.university,
@@ -159,9 +142,7 @@ exports.savePreboardingProfile = async (req, res) => {
       }
     });
 
-    // ================================
     // STEP 3: CERTIFICATIONS (RETAIN OLD)
-    // ================================
     profile.certifications = certifications.map((cert, index) => ({
       name: cert.name,
       file: filesMap.certificationFile?.[index]
@@ -169,9 +150,7 @@ exports.savePreboardingProfile = async (req, res) => {
         : profile.certifications?.[index]?.file || null,
     }));
 
-    // ================================
     // STEP 4: EXPERIENCE (RETAIN OLD)
-    // ================================
     profile.experiences = experiences.map((exp, index) => ({
       company: exp.company,
       designation: exp.designation,
@@ -197,9 +176,7 @@ exports.savePreboardingProfile = async (req, res) => {
         : profile.experiences?.[index]?.salarySlip || null,
     }));
 
-    // ================================
     // STEP 5: BANK DETAILS
-    // ================================
     if (bankDetails) {
       profile.bankDetails = {
         ...bankDetails,
@@ -217,16 +194,12 @@ exports.savePreboardingProfile = async (req, res) => {
       };
     }
 
-    // ================================
     // STEP 6: EMERGENCY CONTACT
-    // ================================
     if (emergencyContact) {
       profile.emergencyContact = emergencyContact;
     }
 
-    // ================================
-    // 🔥 STATUS AUTO UPDATE (FINAL)
-    // ================================
+    // STATUS AUTO UPDATE (FINAL)
     profile.status = isProfileComplete(profile)
       ? "SUBMITTED"
       : "IN_PROGRESS";
@@ -247,9 +220,7 @@ exports.savePreboardingProfile = async (req, res) => {
   }
 };
 
-// ================================
 // GET PREBOARDING PROFILE
-// ================================
 exports.getPreboardingProfile = async (req, res) => {
   try {
     const profile = await PreboardingProfile.findOne({

@@ -3,6 +3,7 @@ import userReducer from "./userSlice";
 import allUsersReducer from "./allUsersSlice";
 import preboardingReducer from "./preboardingSlice";
 import onboardingReducer from "./onboardingSlice";
+import laptopAssetReducer from "./laptopAssetSlice";
 
 const store = configureStore({
   reducer: {
@@ -10,6 +11,8 @@ const store = configureStore({
     allUsers: allUsersReducer,
     preboarding: preboardingReducer,
     onboarding: onboardingReducer,
+    laptopAssets: laptopAssetReducer,
+
   },
 });
 

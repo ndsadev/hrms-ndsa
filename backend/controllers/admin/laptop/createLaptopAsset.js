@@ -1,6 +1,15 @@
 const LaptopAsset = require("../../../models/LaptopAsset");
 const User = require("../../../models/User");
 
+
+const mapSingleFile = (file) => {
+  if (!file) return null;
+  return {
+    url: file.path,
+    publicId: file.filename,
+  };
+};
+
 // Create Laptop Asset
 exports.createLaptopAsset = async (req, res) => {
   try {
@@ -25,7 +34,7 @@ exports.createLaptopAsset = async (req, res) => {
       processor,
     } = req.body;
 
-// Required Check
+    // Required Check
     if (
       !company ||
       !assetCode ||
@@ -40,7 +49,7 @@ exports.createLaptopAsset = async (req, res) => {
       });
     }
 
-// Image Required
+    // Image Required
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({
         success: false,
@@ -48,7 +57,7 @@ exports.createLaptopAsset = async (req, res) => {
       });
     }
 
-// Assigned user validation
+    // Assigned user validation
     const user = await User.findById(assignedTo);
     if (!user) {
       return res.status(400).json({
@@ -57,7 +66,7 @@ exports.createLaptopAsset = async (req, res) => {
       });
     }
 
-// Unique Asset Code
+    // Unique Asset Code
     const existingAsset = await LaptopAsset.findOne({ assetCode });
     if (existingAsset) {
       return res.status(409).json({
@@ -66,10 +75,10 @@ exports.createLaptopAsset = async (req, res) => {
       });
     }
 
-// Map files (files schema)
+    // Map files (files schema)
     const images = req.files.map(mapSingleFile);
 
-// Create Asset
+    // Create Asset
     const asset = await LaptopAsset.create({
       company,
       model,

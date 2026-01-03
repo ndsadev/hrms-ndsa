@@ -92,6 +92,16 @@ const SummaryApi = {
     method: "delete",
   },
 
+  createLaptopAsset: {
+    url: `${backendDomain}/api/admin/laptop`,
+    method: "post",
+  },
+
+  getAllLaptopAssets: {
+    url: `${backendDomain}/api/admin/laptop/all`,
+    method: "get",
+  },
+
 };
 
 export default SummaryApi;

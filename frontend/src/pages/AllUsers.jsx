@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   FaUsers,
   FaEdit,
@@ -10,6 +10,8 @@ import { Container } from "react-bootstrap";
 import { toast } from "react-toastify";
 import Loader from "../components/Loader";
 import useAllUsers from "../hooks/useAllUsers";
+import CommonTable from "../components/Table";
+import Pagination from "../components/Pagination";
 
 const ITEMS_PER_PAGE = 8;
 
@@ -54,30 +56,22 @@ const AllUsers = () => {
   }, [users, search, roleFilter, sortOrder]);
 
   /* ===========================
-     PAGINATION
+     PAGINATION DATA
   ============================ */
-  const totalPages = Math.ceil(filteredUsers.length / ITEMS_PER_PAGE);
-
   const paginatedUsers = filteredUsers.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   );
 
-  const handlePageChange = (page) => {
-    if (page < 1 || page > totalPages) return;
-    setCurrentPage(page);
-  };
-
-  /* Reset page on filter/search change */
-  React.useEffect(() => {
+  useEffect(() => {
     setCurrentPage(1);
   }, [search, roleFilter, sortOrder]);
 
   const formatDate = (date) =>
-    new Date(date).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
+    new Date(date).toLocaleDateString("en-IN", {
       day: "2-digit",
+      month: "short",
+      year: "numeric",
     });
 
   /* ===========================
@@ -123,78 +117,81 @@ const AllUsers = () => {
     );
   };
 
+  const columns = [
+    "Sr No",
+    "Emp ID",
+    "Name",
+    "Email",
+    "Designation",
+    "Role",
+    "Created Date",
+    "Action",
+  ];
+
   return (
     <>
-      {loading && <Loader />}
-
-      <style>{`
-        .page-header {
+      <style> {
+        ` .page-header {
           background: #70a664a1;
           color: white;
           padding: 14px 20px;
           border-radius: 10px;
           margin-bottom: 18px;
-        }
+      }
 
-        .header-row {
+      .header-row {
           display: flex;
           justify-content: space-between;
           flex-wrap: wrap;
           gap: 12px;
-        }
+      }
 
-        .header-left {
+      .header-left {
           display: flex;
           align-items: center;
           gap: 10px;
           font-size: 22px;
           font-weight: 700;
-        }
+      }
 
-        .header-right {
+      .header-right {
           display: flex;
           gap: 12px;
           flex-wrap: wrap;
-        }
+      }
 
-        /* SEARCH */
-        .search-box {
+      .search-box {
           display: flex;
           align-items: center;
           background: white;
           border-radius: 28px;
           overflow: hidden;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-       }
-
-      /* ICON BOX */
-       .search-icon {
-        background: #06406e;     
-        color: #ffffff;
-        padding: 13px 14px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
       }
 
-     /* INPUT */
-       .search-box input {
-         border: none;
-         outline: none;
-         padding: 10px 14px;
-         font-size: 14px;
-         min-width: 220px;
+      .search-icon {
+          background: #06406e;
+          color: #ffffff;
+          padding: 13px 14px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
       }
 
-    /* PLACEHOLDER COLOR (DARKER) */
-       .search-box input::placeholder {
-         color: #4f5d75;         
-         font-weight: 500;
+      .search-box input {
+          border: none;
+          outline: none;
+          padding: 10px 14px;
+          font-size: 14px;
+          min-width: 220px;
       }
 
+      .search-box input::placeholder {
+          color: #4f5d75;
+          font-weight: 500;
+      }
 
-        /* SELECT – ARROW SAFE */
-       .filter-select {
+      .filter-select {
           appearance: none;
           -webkit-appearance: none;
           -moz-appearance: none;
@@ -202,130 +199,56 @@ const AllUsers = () => {
           background-color: #ffffff;
           border-radius: 22px;
           border: none;
-          padding: 8px 42px 8px 16px; 
+          padding: 8px 42px 8px 16px;
           font-size: 14px;
           cursor: pointer;
 
-         background-image: url("data:image/svg+xml;utf8,<svg fill='%2306406e' height='20' viewBox='0 0 24 24' width='20' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
-         background-repeat: no-repeat;
-         background-position: right 14px center; 
-         background-size: 18px;
-       }
+          background-image: url("data:image/svg+xml;utf8,<svg fill='%2306406e' height='20' viewBox='0 0 24 24' width='20' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
+          background-repeat: no-repeat;
+          background-position: right 14px center;
+          background-size: 18px;
+      }
 
-      /* hover / focus look */
-       .filter-select:hover {
-        background-color: #f3f8f4;
+      .filter-select:hover {
+          background-color: #f3f8f4;
       }
 
       .filter-select:focus {
-       outline: none;
-       box-shadow: 0 0 0 2px #70a66455;
-        }
+          outline: none;
+          box-shadow: 0 0 0 2px #70a66455;
+      }
 
-        /* Dropdown hover color fix */
-        select option:hover,
-        select option:checked {
+      select option:hover,
+      select option:checked {
           background-color: #70a664 !important;
           color: white !important;
-        }
+      }
 
-        .users-card {
-        background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 6px 25px rgba(0,0,0,0.08);
-  overflow-x: auto;     
-  max-width: 100%;
-  scrollbar-width: thin;          
-  scrollbar-color: #9bc09266 transparent; 
-        }
-
-        .users-card::-webkit-scrollbar {
-  height: 5px;      
-}
-
-.users-card::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.users-card::-webkit-scrollbar-thumb {
-  background-color: #9bc092; 
-  border-radius: 10px;
-}
-
-.users-card::-webkit-scrollbar-thumb:hover {
-  background-color: #70a664;
-}
-
-        .users-table {
-          width: 100%;
-          border-collapse: collapse;
-        }
-
-        .users-table thead {
-          background: #06406e;
-          color: white;
-        }
-
-        .users-table th,
-        .users-table td {
-          padding: 8px 14px;
-          text-align: center;
-          border-bottom: 1px solid #e5e5e5;
-            white-space: nowrap; 
-        }
-
-        .users-table tbody tr:hover {
-          background: #f3f8f4;
-        }
-
-        .action-btn {
-          width: 34px;
-          height: 34px;
-          border-radius: 50%;
-          border: none;
-          margin: 0 4px;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-        }
-
-        .edit-btn {
-          background: #d4f8dd;
-          color: #198754;
-        }
-
-        .delete-btn {
-          background: #fde2e2;
-          color: #dc3545;
-        }
-
-        /* MODAL */
-        .modal-backdrop {
+      .modal-backdrop {
           position: fixed;
           inset: 0;
-          background: rgba(0,0,0,0.45);
+          background: rgba(0, 0, 0, 0.45);
           display: flex;
           align-items: center;
           justify-content: center;
           z-index: 999;
-        }
+      }
 
-        .modal-box {
+      .modal-box {
           background: #fff;
           width: 420px;
           border-radius: 12px;
           padding: 24px;
           position: relative;
-        }
+      }
 
-        .modal-title {
+      .modal-title {
           font-size: 20px;
           font-weight: 700;
           margin-bottom: 16px;
-        }
+      }
 
-        .close-btn {
+      .close-btn {
           position: absolute;
           top: 14px;
           right: 14px;
@@ -333,75 +256,37 @@ const AllUsers = () => {
           background: none;
           font-size: 18px;
           cursor: pointer;
-        }
+      }
 
-        .modal-label {
+      .modal-label {
           font-weight: 600;
           margin-top: 10px;
-        }
+      }
 
-        .modal-input,
-        .modal-select {
+      .modal-input,
+      .modal-select {
           width: 100%;
           padding: 10px;
           margin-top: 6px;
           border-radius: 8px;
           border: 1px solid #ccc;
-        }
+      }
 
-        .modal-input[readonly] {
+      .modal-input[readonly] {
           background: #f1f3f5;
-        }
+      }
 
-        .modal-btn {
+      .modal-btn {
           margin-top: 18px;
           background: #06406e;
           color: white;
           border: none;
           padding: 10px 22px;
           border-radius: 22px;
-        }
-          
-        /* PAGINATION */
-        .pagination-wrap {
-          display: flex;
-          justify-content: flex-end;
-          margin-top: 22px;
-        }
+      }
 
-        .pagination {
-         display: flex;
-         gap: 10px;
-         background: white;
-         padding: 10px 15px;
-         border-radius: 30px;
-         border: 1px solid #9bc092;
-        }
-
-        .page-btn {
-          border: none;
-          background: transparent;
-          font-weight: 600;
-          cursor: pointer;
-        }
-
-        .page-btn.active {
-          background: #06406e;
-          color: white;
-          border-radius: 50%;
-          width: 32px;
-          height: 32px;
-        }
-
-        .nav-btn {
-          background: #06406e;
-          color: white;
-          border: none;
-          padding: 6px 18px;
-          border-radius: 18px;
-        }
-
-      `}</style>
+      `}
+      </style>
 
       <Container>
         {/* HEADER */}
@@ -449,94 +334,54 @@ const AllUsers = () => {
 
         {/* TABLE */}
         <div className="users-card">
-          <table className="users-table">
-            <thead>
-              <tr>
-                <th>Sr.</th>
-                <th>Emp ID</th>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Designation</th>
-                <th>Role</th>
-                <th>Created Date</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {!loading && paginatedUsers.length === 0 ? (
-                <tr>
-                  <td colSpan="8" style={{ padding: 20 }}>
-                    No users found
-                  </td>
-                </tr>
-              ) : (
-                paginatedUsers.map((u, i) => (
-                  <tr key={u._id}>
-                    <td>{(currentPage - 1) * ITEMS_PER_PAGE + i + 1}</td>
-                    <td>{u.employeeId || "-"}</td>
-                    <td>{u.name}</td>
-                    <td>{u.email}</td>
-                    <td>{u.designation}</td>
-                    <td>{u.role}</td>
-                    <td>{formatDate(u.createdAt)}</td>
-                    <td>
-                      <button
-                        className="action-btn edit-btn"
+          {loading ? (
+            <div style={{ padding: 40, textAlign: "center" }}>
+              <Loader />
+            </div>
+          ) : (
+            <CommonTable
+              columns={columns}
+              data={paginatedUsers}
+              renderRow={(u, i) => (
+                <tr key={u._id}>
+                  <td>{(currentPage - 1) * ITEMS_PER_PAGE + i + 1}</td>
+                  <td>{u.employeeId || "-"}</td>
+                  <td>{u.name}</td>
+                  <td>{u.email}</td>
+                  <td>{u.designation || "-"}</td>
+                  <td>{u.role}</td>
+                  <td>{formatDate(u.createdAt)}</td>
+                  <td>
+                    <div className="action-icons">
+                      <div
+                        className="icon-btn icon-edit"
                         onClick={() => openEditModal(u)}
                       >
                         <FaEdit />
-                      </button>
-                      <button
-                        className="action-btn delete-btn"
+                      </div>
+                      <div
+                        className="icon-btn icon-delete"
                         onClick={() => handleDelete(u._id)}
                       >
                         <FaTrash />
-                      </button>
-                    </td>
-                  </tr>
-
-                ))
+                      </div>
+                    </div>
+                  </td>
+                </tr>
               )}
-            </tbody>
-          </table>
+              emptyMessage="No users found"
+            />
+          )}
         </div>
-
         {/* PAGINATION */}
-        {totalPages > 1 && (
-          <div className="pagination-wrap">
-            <div className="pagination">
-              <button
-                className="nav-btn"
-                onClick={() => handlePageChange(currentPage - 1)}
-                disabled={currentPage === 1}
-              >
-                Prev
-              </button>
+        <Pagination
+          totalItems={filteredUsers.length}
+          itemsPerPage={ITEMS_PER_PAGE}
+          currentPage={currentPage}
+          onPageChange={setCurrentPage}
+        />
 
-              {Array.from({ length: totalPages }).map((_, i) => (
-                <button
-                  key={i}
-                  className={`page-btn ${currentPage === i + 1 ? "active" : ""
-                    }`}
-                  onClick={() => handlePageChange(i + 1)}
-                >
-                  {i + 1}
-                </button>
-              ))}
-
-              <button
-                className="nav-btn"
-                onClick={() => handlePageChange(currentPage + 1)}
-                disabled={currentPage === totalPages}
-              >
-                Next
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* EDIT MODAL (UNCHANGED) */}
+        {/* EDIT MODAL */}
         {showModal && (
           <div className="modal-backdrop" onClick={closeModal}>
             <div className="modal-box" onClick={(e) => e.stopPropagation()}>
@@ -582,11 +427,7 @@ const AllUsers = () => {
                 <option>EMPLOYEE</option>
               </select>
 
-              <button
-                type="button"
-                className="modal-btn"
-                onClick={handleUpdate}
-              >
+              <button className="modal-btn" onClick={handleUpdate}>
                 Update User
               </button>
             </div>

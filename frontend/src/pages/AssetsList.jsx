@@ -1,45 +1,71 @@
 import React, { useEffect, useState } from "react";
-import { FaTrash, FaEye, FaEdit, FaCopy } from "react-icons/fa";
 import { Container } from "react-bootstrap";
+import { FaEye, FaEdit } from "react-icons/fa";
+import { useDispatch, useSelector } from "react-redux";
+import api from "../api/axiosInstance";
+import SummaryApi from "../common";
+import { setLaptopAssets } from "../store/laptopAssetSlice";
+import CommonTable from "../components/Table";
 
 const AssetsList = () => {
-  const [activeTab, setActiveTab] = useState("laptop");
-  const [data, setData] = useState([]);
+  const dispatch = useDispatch();
+  const { list } = useSelector((state) => state.laptopAssets);
 
+  const [activeTab, setActiveTab] = useState("laptop");
   const [currentPage, setCurrentPage] = useState(1);
+
   const itemsPerPage = 9;
 
+  /* ==========================
+     FETCH LAPTOP ASSETS
+  ========================== */
   useEffect(() => {
-    const key = activeTab === "laptop" ? "laptopAssets" : "mobileAssets";
-    const list = JSON.parse(localStorage.getItem(key)) || [];
-    setData(list);
-    setCurrentPage(1);
-  }, [activeTab]);
+    if (activeTab !== "laptop") return;
 
-  const handleDelete = (id) => {
-    const key = activeTab === "laptop" ? "laptopAssets" : "mobileAssets";
-    const updated = data.filter((item) => item.id !== id);
-    localStorage.setItem(key, JSON.stringify(updated));
-    setData(updated);
-  };
+    const fetchAssets = async () => {
+      try {
+        const res = await api({
+          url: SummaryApi.getAllLaptopAssets.url,
+          method: SummaryApi.getAllLaptopAssets.method,
+        });
 
-  const handleCopy = (code) => {
-    navigator.clipboard.writeText(code);
-  };
+        dispatch(setLaptopAssets(res.data?.data || []));
+        setCurrentPage(1);
+      } catch (err) {
+        console.error("Failed to load laptop assets");
+      }
+    };
 
-  const totalPages = Math.ceil(data.length / itemsPerPage);
+    fetchAssets();
+  }, [activeTab, dispatch]);
+
+  /* ==========================
+     PAGINATION
+  ========================== */
+  const totalPages = Math.ceil(list.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedData = data.slice(startIndex, startIndex + itemsPerPage);
+  const paginatedData = list.slice(
+    startIndex,
+    startIndex + itemsPerPage
+  );
+
+  const columns = [
+    "Sr No",
+    "Company",
+    "Assigned Employee",
+    "Employee ID",
+    "Official Email",
+    "Asset Code",
+    "Created On",
+    "Action",
+  ];
 
   return (
     <>
       <style>{`
-        .assets-card {
-          padding: 0;
-        }
+        .assets-card { padding: 0; }
 
-        /* HEADER */
-        .page-header {
+         .page-header {
           background: #70a664a1;
           padding: 12px 24px;
           color: white;
@@ -68,65 +94,6 @@ const AssetsList = () => {
           background-size: 14px;
         }
 
-        /* TABLE */
-        .table-wrapper {
-          background: #ffffff;
-          border: 1px solid #d9e1e8;
-          border-radius: 14px;
-          overflow: hidden;
-          box-shadow: 0 6px 25px rgba(0,0,0,0.06);
-        }
-
-        table {
-          width: 100%;
-          border-collapse: collapse;
-        }
-
-        thead {
-          background: #06406e;
-        }
-
-        th {
-          color: white;
-          padding: 10px;
-          font-size: 15px;
-          text-align: center;
-        }
-
-        td {
-          padding: 9px;
-          font-size: 15px;
-          text-align: center;
-          border-bottom: 1px solid #e2e6ea;
-        }
-
-        tr:last-child td {
-          border-bottom: none;
-        }
-
-        /* ACTION ICONS */
-        .action-icons {
-          display: flex;
-          justify-content: center;
-          gap: 10px;
-        }
-
-        .icon-btn {
-          width: 32px;
-          height: 32px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border-radius: 50%;
-          cursor: pointer;
-        }
-
-        .icon-view { background: #d0e1fa; color: #1d4ed8; }
-        .icon-edit { background: #c8ecd8; color: #15803d; }
-        .icon-delete { background: #fad9d9; color: #dc2626; }
-        .icon-copy { background: #cee2f7; color: #334155; }
-
-        /* PAGINATION OUTER BOX 🔥 */
         .pagination-container {
           margin-top: 20px;
           display: flex;
@@ -135,12 +102,11 @@ const AssetsList = () => {
 
         .pagination-box {
           display: flex;
-          align-items: center;
           gap: 10px;
           padding: 10px 14px;
           background: #ffffff;
-          border: 2px solid #b7d3b1;
           border-radius: 40px;
+          border: 2px solid #b7d3b1;
         }
 
         .page-btn {
@@ -153,21 +119,13 @@ const AssetsList = () => {
           font-weight: 600;
         }
 
-        .page-btn:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-
         .page-number {
           width: 36px;
           height: 36px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background: transparent;
-          border: none;
           font-weight: 600;
           cursor: pointer;
+          border: none;
+          background: transparent;
         }
 
         .page-number.active {
@@ -188,52 +146,44 @@ const AssetsList = () => {
               onChange={(e) => setActiveTab(e.target.value)}
             >
               <option value="laptop">Laptop</option>
-              <option value="mobile">Mobile</option>
+              <option value="mobile" disabled>
+                Mobile
+              </option>
             </select>
           </div>
 
           {/* TABLE */}
-          <div className="table-wrapper">
-            <table>
-              <thead>
-                <tr>
-                  <th>Sr No</th>
-                  <th>Company</th>
-                  <th>Assigned To</th>
-                  <th>Asset Code</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {paginatedData.map((item, index) => (
-                  <tr key={item.id}>
-                    <td>{startIndex + index + 1}</td>
-                    <td>{item.company}</td>
-                    <td>{item.assignedTo}</td>
-                    <td>{item.assetCode}</td>
-                    <td>
-                      <div className="action-icons">
-                        <div className="icon-btn icon-view"><FaEye /></div>
-                        <div className="icon-btn icon-edit"><FaEdit /></div>
-                        <div
-                          className="icon-btn icon-delete"
-                          onClick={() => handleDelete(item.id)}
-                        >
-                          <FaTrash />
-                        </div>
-                        <div
-                          className="icon-btn icon-copy"
-                          onClick={() => handleCopy(item.assetCode)}
-                        >
-                          <FaCopy />
-                        </div>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <CommonTable
+            columns={columns}
+            data={paginatedData}
+            renderRow={(item, index) => (
+              <tr key={item._id}>
+                <td>{startIndex + index + 1}</td>
+                <td>{item.company}</td>
+                <td>{item.assignedTo?.name || "-"}</td>
+                <td>{item.assignedTo?.employeeId || "-"}</td>
+                <td>{item.officialEmail}</td>
+                <td>{item.assetCode}</td>
+                <td>
+                  {new Date(item.createdAt).toLocaleDateString("en-IN", {
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric",
+                  })}
+                </td>
+                <td>
+                  <div className="action-icons">
+                    <div className="icon-btn icon-view">
+                      <FaEye />
+                    </div>
+                    <div className="icon-btn icon-edit">
+                      <FaEdit />
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            )}
+          />
 
           {/* PAGINATION */}
           {totalPages > 1 && (
@@ -244,7 +194,7 @@ const AssetsList = () => {
                   disabled={currentPage === 1}
                   onClick={() => setCurrentPage((p) => p - 1)}
                 >
-                  Previous
+                  Prev
                 </button>
 
                 {[...Array(totalPages)].map((_, i) => (

@@ -6,11 +6,12 @@ import api from "../api/axiosInstance";
 import SummaryApi from "../common";
 import { setLaptopAssets } from "../store/laptopAssetSlice";
 import CommonTable from "../components/Table";
+import Loader from "../components/Loader";
 
 const AssetsList = () => {
   const dispatch = useDispatch();
+  const [loading, setLoading] = useState(false);
   const { list } = useSelector((state) => state.laptopAssets);
-
   const [activeTab, setActiveTab] = useState("laptop");
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -24,6 +25,9 @@ const AssetsList = () => {
 
     const fetchAssets = async () => {
       try {
+        if (list.length === 0) {
+          setLoading(true);
+        }
         const res = await api({
           url: SummaryApi.getAllLaptopAssets.url,
           method: SummaryApi.getAllLaptopAssets.method,
@@ -33,6 +37,8 @@ const AssetsList = () => {
         setCurrentPage(1);
       } catch (err) {
         console.error("Failed to load laptop assets");
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -153,37 +159,40 @@ const AssetsList = () => {
           </div>
 
           {/* TABLE */}
-          <CommonTable
-            columns={columns}
-            data={paginatedData}
-            renderRow={(item, index) => (
-              <tr key={item._id}>
-                <td>{startIndex + index + 1}</td>
-                <td>{item.company}</td>
-                <td>{item.assignedTo?.name || "-"}</td>
-                <td>{item.assignedTo?.employeeId || "-"}</td>
-                <td>{item.officialEmail}</td>
-                <td>{item.assetCode}</td>
-                <td>
-                  {new Date(item.createdAt).toLocaleDateString("en-IN", {
-                    day: "2-digit",
-                    month: "short",
-                    year: "numeric",
-                  })}
-                </td>
-                <td>
-                  <div className="action-icons">
-                    <div className="icon-btn icon-view">
-                      <FaEye />
+          {loading ? <Loader /> : (
+            <CommonTable
+              columns={columns}
+              data={paginatedData}
+              emptyMessage="No assets found"
+              renderRow={(item, index) => (
+                <tr key={item._id}>
+                  <td>{startIndex + index + 1}</td>
+                  <td>{item.company}</td>
+                  <td>{item.assignedTo?.name || "-"}</td>
+                  <td>{item.assignedTo?.employeeId || "-"}</td>
+                  <td>{item.officialEmail}</td>
+                  <td>{item.assetCode}</td>
+                  <td>
+                    {new Date(item.createdAt).toLocaleDateString("en-IN", {
+                      day: "2-digit",
+                      month: "short",
+                      year: "numeric",
+                    })}
+                  </td>
+                  <td>
+                    <div className="action-icons">
+                      <div className="icon-btn icon-view">
+                        <FaEye />
+                      </div>
+                      <div className="icon-btn icon-edit">
+                        <FaEdit />
+                      </div>
                     </div>
-                    <div className="icon-btn icon-edit">
-                      <FaEdit />
-                    </div>
-                  </div>
-                </td>
-              </tr>
-            )}
-          />
+                  </td>
+                </tr>
+              )}
+            />
+          )}
 
           {/* PAGINATION */}
           {totalPages > 1 && (
@@ -200,9 +209,8 @@ const AssetsList = () => {
                 {[...Array(totalPages)].map((_, i) => (
                   <button
                     key={i}
-                    className={`page-number ${
-                      currentPage === i + 1 ? "active" : ""
-                    }`}
+                    className={`page-number ${currentPage === i + 1 ? "active" : ""
+                      }`}
                     onClick={() => setCurrentPage(i + 1)}
                   >
                     {i + 1}
